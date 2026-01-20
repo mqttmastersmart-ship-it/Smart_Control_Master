@@ -78,6 +78,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 lucide.createIcons();
             }
+
+            // --- AJUSTE DE ALARMES ---
+            if (topic === "fenix/central/alarmes") {
+                const alarmList = document.getElementById("alarm_list");
+                if (alarmList) {
+                    if (data.alertas && Array.isArray(data.alertas)) {
+                        alarmList.innerHTML = ""; 
+                        data.alertas.forEach(msg => {
+                            const li = document.createElement("li");
+                            li.style.color = "#fca5a5";
+                            li.innerHTML = `<strong><i data-lucide="alert-circle"></i></strong> ${msg}`;
+                            alarmList.appendChild(li);
+                        });
+                    }
+                }
+                lucide.createIcons();
+            }
+
         } catch (e) { console.warn("Erro JSON"); }
     };
 
@@ -92,6 +110,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
         enviar("fenix/central/energia", { preco_kwh: document.getElementById("cfg_preco_kwh").value, p1_kw: document.getElementById("cfg_p1_kw").value, p2_kw: document.getElementById("cfg_p2_kw").value, p3_kw: document.getElementById("cfg_p3_kw").value });
+    });
+
+    // --- AJUSTE BOTAO RESET ALARMES ---
+    document.getElementById("btn_reset_alarmes")?.addEventListener("click", () => {
+        enviar("fenix/central/comando", { acao: "reset_alarmes" });
+        document.getElementById("alarm_list").innerHTML = "<li style='color:#94a3b8'>Comando de reset enviado...</li>";
     });
 
     client.connect(options);
