@@ -1,226 +1,123 @@
-// --- 1. CONFIGURAÇÃO DO BROKER MQTT (EMQX) ---
-const MQTT_CONFIG = {
-    host: "v05ef722.ala.us-east-1.emqxsl.com",
-    port: 8084, 
-    clientId: "Fenix_App_" + Math.random().toString(16).substr(2, 8),
-    useSSL: true,
-    path: "/mqtt",
-    user: "Admin", 
-    pass: "Admin"
-};
-
-// --- 2. INICIALIZAÇÃO DO CLIENTE ---
-const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
-
-const options = {
-    useSSL: MQTT_CONFIG.useSSL,
-    timeout: 3,
-    keepAliveInterval: 60,
-    cleanSession: true,
-    userName: MQTT_CONFIG.user,
-    password: MQTT_CONFIG.pass,
-    onSuccess: onConnect,
-    onFailure: (err) => {
-        console.error("Erro na conexão MQTT:", err);
-        document.getElementById("mqtt_status").innerText = "MQTT: Erro";
-    }
-};
-
-// --- 3. EVENTOS DE CONEXÃO ---
-function onConnect() {
-    console.log("Conectado ao Broker EMQX");
-    const mqttStatus = document.getElementById("mqtt_status");
-    mqttStatus.innerText = "MQTT: On";
-    mqttStatus.className = "status-on";
-    
-    // Inscrição nos tópicos
-    client.subscribe("fenix/central/dashboard");
-    client.subscribe("fenix/central/log");
-    client.subscribe("fenix/central/alarmes");
-    client.subscribe("fenix/central/historico");
-    client.subscribe("config/central/status_atual");
-
-    // Sincronização responsiva: pede os dados assim que conecta
-    enviar("config/central/get_status", { request: "sync" });
-}
-
-client.onConnectionLost = (responseObject) => {
-    const mqttStatus = document.getElementById("mqtt_status");
-    const centralStatus = document.getElementById("central_status");
-    mqttStatus.innerText = "MQTT: Off";
-    mqttStatus.className = "status-off";
-    centralStatus.className = "status-off";
-    
-    if (responseObject.errorCode !== 0) {
-        console.log("Conexão perdida, tentando reconectar...");
-        setTimeout(() => client.connect(options), 5000);
-    }
-};
-
-client.onMessageArrived = (message) => {
-    try {
-        const topic = message.destinationName;
-        const data = JSON.parse(message.payloadString);
-        // Uso do requestAnimationFrame para garantir fluidez na UI
-        requestAnimationFrame(() => processarMensagem(topic, data));
-    } catch (e) {
-        console.warn("Erro ao processar JSON:", e);
-    }
-};
-
-client.connect(options);
-
-// --- 4. PROCESSAMENTO DE MENSAGENS RESPONSIVO ---
-function processarMensagem(topic, data) {
-    if (topic === "fenix/central/dashboard") {
-        atualizarUI(data);
-        const centralStatus = document.getElementById("central_status");
-        centralStatus.innerText = "Central: On";
-        centralStatus.className = "status-on";
-    }
-    
-    if (topic === "config/central/status_atual") {
-        sincronizarCamposConfig(data);
-    }
-
-    if (topic === "fenix/central/log" && typeof adicionarAoLog === "function") {
-        adicionarAoLog(data.msg_log);
-    }
-
-    if (topic === "fenix/central/alarmes" && typeof renderizarAlarmes === "function") {
-        renderizarAlarmes(data);
-    }
-}
-
-// --- 5. ATUALIZAÇÃO DA INTERFACE (UI) ---
-function atualizarUI(data) {
-    // Atualização em lote dos campos de status
-    const camposGerais = ["sistema", "passo", "boia", "operacao", "retroA", "retroB", "ativo", "manual_sel", "rodizio_min"];
-    camposGerais.forEach(id => {
-        const el = document.getElementById("status_" + id);
-        if(el && data[id] !== undefined) el.innerText = data[id];
-    });
-
-    // Monitoramento dos 3 Poços
-    for (let i = 1; i <= 3; i++) {
-        const prefix = `p${i}_`;
-        
-        // Elementos de texto
-        const elOnline = document.getElementById(prefix + "online");
-        const elFluxo = document.getElementById(prefix + "fluxo");
-        const elTimer = document.getElementById(prefix + "timer");
-        
-        if (elOnline) elOnline.innerText = data[prefix + "on"] || "-";
-        if (elFluxo) elFluxo.innerText = data[prefix + "flx"] || "-";
-        if (elTimer) elTimer.innerText = data[prefix + "rod"] || "00:00";
-        
-        // Dados de Consumo
-        const parcTime = data[prefix + "parc"] || "00:00";
-        const elDataDash = document.getElementById(prefix + "data_dash");
-        const elTimerDash = document.getElementById(prefix + "timer_total_dash");
-        
-        if (elDataDash) elDataDash.innerText = data[prefix + "dt"] || "-";
-        if (elTimerDash) elTimerDash.innerText = parcTime;
-
-        // Animação Responsiva do Motor (CSS spinning)
-        const motorIcon = document.getElementById(prefix + "motor");
-        if(motorIcon) {
-            if(data[prefix + "flx"] === "Presente") motorIcon.classList.add("spinning");
-            else motorIcon.classList.remove("spinning");
-        }
-
-        // Cálculos Financeiros
-        if(data[prefix + "parc_seg"] !== undefined) {
-            calcularFinanceiro(i, data[prefix + "parc_seg"]);
-        }
-    }
-
-    // Cloro (Barra de progresso responsiva)
-    const elCloroPeso = document.getElementById("cloro_peso");
-    const elCloroBar = document.getElementById("cloro_bar");
-    const elCloroTxt = document.getElementById("cloro_pct_txt");
-
-    if(data.cloro_kg !== undefined && elCloroPeso) elCloroPeso.innerText = data.cloro_kg + " kg";
-    if(data.cloro_pct !== undefined) {
-        if(elCloroBar) elCloroBar.style.width = data.cloro_pct + "%";
-        if(elCloroTxt) elCloroTxt.innerText = data.cloro_pct + "%";
-    }
-}
-
-// --- 6. CÁLCULOS E SINCRONIZAÇÃO ---
-function calcularFinanceiro(id, segsTotal) {
-    const elKw = document.getElementById(`cfg_p${id}_kw`);
-    const elPreco = document.getElementById("cfg_preco_kwh");
-    
-    const kw = (elKw ? parseFloat(elKw.value) : 0) || 0;
-    const preco = (elPreco ? parseFloat(elPreco.value) : 0) || 0;
-    
-    const kwh = (segsTotal / 3600) * kw;
-    const custo = kwh * preco;
-
-    // Atualiza todos os campos de valor simultaneamente
-    const targets = [`p${id}_kwh_dash`, `p${id}_kw_parcial` , `p${id}_valor_dash`, `p${id}_valor` ];
-    targets.forEach(t => {
-        const el = document.getElementById(t);
-        if(el) {
-            if(t.includes("kwh") || t.includes("kw_")) el.innerText = kwh.toFixed(2) + " kWh";
-            else el.innerText = "R$ " + custo.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-        }
-    });
-}
-
-function sincronizarCamposConfig(data) {
-    const mapping = {
-        'set_rh': 'cfg_rodizio_h',
-        'set_rm': 'cfg_rodizio_m',
-        'cfg_rA': 'select_retroA',
-        'cfg_rB': 'select_retroB',
-        'man_sel': 'select_manual',
-        'set_t_off': 'cfg_timeout_offline',
-        'set_t_fb': 'cfg_timeout_feedback',
-        'set_t_ench': 'cfg_timeout_enchimento',
-        'set_p_cloro': 'cfg_peso_critico'
+document.addEventListener("DOMContentLoaded", () => {
+    const MQTT_CONFIG = {
+        host: "v05ef722.ala.us-east-1.emqxsl.com",
+        port: 8084,
+        path: "/mqtt",
+        clientId: "Fenix_App_" + Math.random().toString(16).substr(2, 8),
+        useSSL: true,
+        user: "Admin",
+        pass: "Admin"
     };
 
-    for (let key in mapping) {
-        const el = document.getElementById(mapping[key]);
-        if (el && data[key] !== undefined) el.value = data[key];
-    }
-}
+    const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
-// --- 7. COMANDOS (PUBLISH) ---
-function enviar(topico, payload) {
-    if (!client.isConnected()) return;
-    const message = new Paho.MQTT.Message(JSON.stringify(payload));
-    message.destinationName = topico;
-    message.qos = 1; // Garante a entrega
-    client.send(message);
-}
+    const options = {
+        useSSL: MQTT_CONFIG.useSSL,
+        timeout: 5,
+        userName: MQTT_CONFIG.user,
+        password: MQTT_CONFIG.pass,
+        onSuccess: () => {
+            console.log("MQTT Conectado");
+            document.getElementById("mqtt_status").innerText = "MQTT: On";
+            document.getElementById("mqtt_status").className = "status-on";
+            client.subscribe("fenix/central/#");
+        },
+        onFailure: (err) => {
+            console.error("Erro MQTT:", err);
+            document.getElementById("mqtt_status").innerText = "MQTT: Erro";
+            document.getElementById("mqtt_status").className = "status-off";
+        }
+    };
 
-// Listeners de Eventos
-document.addEventListener('DOMContentLoaded', () => {
-    const btnConfig = document.getElementById("btn_salvar_config");
-    if(btnConfig) {
-        btnConfig.onclick = () => {
-            enviar("config/central/ajustes", {
-                set_rh: document.getElementById("cfg_rodizio_h").value,
-                set_rm: document.getElementById("cfg_rodizio_m").value,
-                cfg_rA: document.getElementById("select_retroA").value,
-                cfg_rB: document.getElementById("select_retroB").value,
-                man_sel: document.getElementById("select_manual").value
-            });
-        };
-    }
+    client.onMessageArrived = (message) => {
+        try {
+            const data = JSON.parse(message.payloadString);
+            const topic = message.destinationName;
 
-    const btnSeg = document.getElementById("btn_salvar_seguranca");
-    if(btnSeg) {
-        btnSeg.onclick = () => {
-            enviar("config/central/ajustes", {
-                set_t_off: document.getElementById("cfg_timeout_offline").value,
-                set_t_fb: document.getElementById("cfg_timeout_feedback").value,
-                set_t_ench: document.getElementById("cfg_timeout_enchimento").value,
-                set_p_cloro: document.getElementById("cfg_peso_critico").value
-            });
-        };
-    }
+            if (topic === "fenix/central/dashboard") {
+                if (data.sistema) document.getElementById("status_sistema").innerText = data.sistema;
+                if (data.passo) document.getElementById("status_passo").innerText = data.passo;
+                if (data.boia) document.getElementById("status_boia").innerText = data.boia;
+                if (data.operacao) document.getElementById("status_operacao").innerText = data.operacao;
+                if (data.ativo) document.getElementById("status_ativo").innerText = data.ativo;
+                if (data.rodizio_min) document.getElementById("status_rodizio_min").innerText = data.rodizio_min;
+                if (data.retroA) document.getElementById("status_retroA").innerText = data.retroA;
+                if (data.retroB) document.getElementById("status_retroB").innerText = data.retroB;
+                if (data.manual_sel) document.getElementById("status_manual_sel").innerText = data.manual_sel;
+
+                for (let i = 1; i <= 3; i++) {
+                    if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
+                    if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
+                    if (data[`p${i}_tmr`]) document.getElementById(`p${i}_timer`).innerText = data[`p${i}_tmr`];
+                    if (data[`p${i}_total`]) document.getElementById(`p${i}_timer_total`).innerText = data[`p${i}_total`];
+                    if (data[`p${i}_reset`]) {
+                        document.getElementById(`p${i}_data_dash`).innerText = data[`p${i}_reset`];
+                        document.getElementById(`p${i}_data_cons`).innerText = data[`p${i}_reset`];
+                    }
+                    if (data[`p${i}_parc`]) {
+                        const dP = document.getElementById(`p${i}_timer_parcial_dash`);
+                        const cP = document.getElementById(`p${i}_timer_parcial`);
+                        if (dP) dP.innerText = data[`p${i}_parc`];
+                        if (cP) cP.innerText = data[`p${i}_parc`];
+                    }
+                    if (data[`p${i}_kwh`]) document.getElementById(`p${i}_kwh_dash`).innerText = data[`p${i}_kwh`] + " kWh";
+                    if (data[`p${i}_rs`]) {
+                        document.getElementById(`p${i}_valor_dash`).innerText = "R$ " + data[`p${i}_rs`];
+                        document.getElementById(`p${i}_valor`).innerText = "R$ " + data[`p${i}_rs`];
+                    }
+                    const motor = document.getElementById(`p${i}_motor`);
+                    if (motor && data[`p${i}_flx`] === "Presente") motor.classList.add("spinning");
+                    else if (motor) motor.classList.remove("spinning");
+                }
+            }
+
+            if (topic === "fenix/central/historico") {
+                const h = new Date().toLocaleTimeString();
+                if (data.tipo === "relatorio_retro") {
+                    const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
+                    const l = document.getElementById("lista_historico_retro");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong><i data-lucide="refresh-cw"></i> RETRO:</strong> ${txt}`; l.prepend(li); }
+                } else if (data.tipo === "evento") {
+                    const l = document.getElementById("history_list");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${h}]</strong> ${data.msg}`; l.prepend(li); }
+                }
+                lucide.createIcons();
+            }
+        } catch (e) { console.warn("Erro JSON"); }
+    };
+
+    function enviar(t, p) { if (client.isConnected()) { const m = new Paho.MQTT.Message(JSON.stringify(p)); m.destinationName = t; client.send(m); } }
+
+    // BOTÕES DE SALVAR (NOVO)
+    document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
+        enviar("fenix/central/config", {
+            rodizio_h: document.getElementById("cfg_rodizio_h").value,
+            rodizio_m: document.getElementById("cfg_rodizio_m").value,
+            retroA: document.getElementById("select_retroA").value,
+            retroB: document.getElementById("select_retroB").value,
+            manual: document.getElementById("select_manual").value
+        });
+    });
+
+    document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
+        enviar("fenix/central/seguranca", {
+            timeout_off: document.getElementById("cfg_timeout_offline").value,
+            cloro_critico: document.getElementById("cfg_peso_critico").value
+        });
+    });
+
+    document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
+        enviar("fenix/central/energia", {
+            preco_kwh: document.getElementById("cfg_preco_kwh").value,
+            p1_kw: document.getElementById("cfg_p1_kw").value,
+            p2_kw: document.getElementById("cfg_p2_kw").value,
+            p3_kw: document.getElementById("cfg_p3_kw").value
+        });
+    });
+
+    document.getElementById("btn_power_central")?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "toggle_power" }));
+
+    [1, 2, 3].forEach(i => document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "reset_parcial", poco: i })));
+
+    client.connect(options);
 });
