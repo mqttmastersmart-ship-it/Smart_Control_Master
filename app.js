@@ -12,18 +12,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
     const options = {
-        useSSL: MQTT_CONFIG.useSSL,
+        useSSL: true,
         timeout: 5,
-        userName: MQTT_CONFIG.user,
-        password: MQTT_CONFIG.pass,
+        userName: "Admin",
+        password: "Admin",
         onSuccess: () => {
-            console.log("MQTT Conectado");
             document.getElementById("mqtt_status").innerText = "MQTT: On";
             document.getElementById("mqtt_status").className = "status-on";
             client.subscribe("fenix/central/#");
         },
-        onFailure: (err) => {
-            console.error("Erro MQTT:", err);
+        onFailure: () => {
             document.getElementById("mqtt_status").innerText = "MQTT: Erro";
             document.getElementById("mqtt_status").className = "status-off";
         }
@@ -35,16 +33,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const topic = message.destinationName;
 
             if (topic === "fenix/central/dashboard") {
-                if (data.sistema) document.getElementById("status_sistema").innerText = data.sistema;
-                if (data.passo) document.getElementById("status_passo").innerText = data.passo;
-                if (data.boia) document.getElementById("status_boia").innerText = data.boia;
-                if (data.operacao) document.getElementById("status_operacao").innerText = data.operacao;
-                if (data.ativo) document.getElementById("status_ativo").innerText = data.ativo;
-                if (data.rodizio_min) document.getElementById("status_rodizio_min").innerText = data.rodizio_min;
-                if (data.retroA) document.getElementById("status_retroA").innerText = data.retroA;
-                if (data.retroB) document.getElementById("status_retroB").innerText = data.retroB;
-                if (data.manual_sel) document.getElementById("status_manual_sel").innerText = data.manual_sel;
+                // Preenche Status Geral
+                const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
+                fields.forEach(f => {
+                    const el = document.getElementById("status_" + f);
+                    if(el && data[f]) el.innerText = data[f];
+                });
 
+                // Preenche Dados dos Poços
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
                     if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
@@ -72,52 +68,31 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (topic === "fenix/central/historico") {
-                const h = new Date().toLocaleTimeString();
                 if (data.tipo === "relatorio_retro") {
                     const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
                     const l = document.getElementById("lista_historico_retro");
                     if (l) { const li = document.createElement("li"); li.innerHTML = `<strong><i data-lucide="refresh-cw"></i> RETRO:</strong> ${txt}`; l.prepend(li); }
                 } else if (data.tipo === "evento") {
                     const l = document.getElementById("history_list");
-                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${h}]</strong> ${data.msg}`; l.prepend(li); }
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${data.msg}`; l.prepend(li); }
                 }
                 lucide.createIcons();
             }
         } catch (e) { console.warn("Erro JSON"); }
     };
 
-    function enviar(t, p) { if (client.isConnected()) { const m = new Paho.MQTT.Message(JSON.stringify(p)); m.destinationName = t; client.send(m); } }
+    function enviar(t, p) { if (client.isConnected()) { client.send(new Paho.MQTT.Message(JSON.stringify(p), t)); } }
 
-    // BOTÕES DE SALVAR (NOVO)
+    // BOTÕES DE SALVAR
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
-        enviar("fenix/central/config", {
-            rodizio_h: document.getElementById("cfg_rodizio_h").value,
-            rodizio_m: document.getElementById("cfg_rodizio_m").value,
-            retroA: document.getElementById("select_retroA").value,
-            retroB: document.getElementById("select_retroB").value,
-            manual: document.getElementById("select_manual").value
-        });
+        enviar("fenix/central/config", { rodizio_h: document.getElementById("cfg_rodizio_h").value, rodizio_m: document.getElementById("cfg_rodizio_m").value, retroA: document.getElementById("select_retroA").value, retroB: document.getElementById("select_retroB").value, manual: document.getElementById("select_manual").value });
     });
-
     document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
-        enviar("fenix/central/seguranca", {
-            timeout_off: document.getElementById("cfg_timeout_offline").value,
-            cloro_critico: document.getElementById("cfg_peso_critico").value
-        });
+        enviar("fenix/central/seguranca", { timeout_off: document.getElementById("cfg_timeout_offline").value, cloro_critico: document.getElementById("cfg_peso_critico").value });
     });
-
     document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
-        enviar("fenix/central/energia", {
-            preco_kwh: document.getElementById("cfg_preco_kwh").value,
-            p1_kw: document.getElementById("cfg_p1_kw").value,
-            p2_kw: document.getElementById("cfg_p2_kw").value,
-            p3_kw: document.getElementById("cfg_p3_kw").value
-        });
+        enviar("fenix/central/energia", { preco_kwh: document.getElementById("cfg_preco_kwh").value, p1_kw: document.getElementById("cfg_p1_kw").value, p2_kw: document.getElementById("cfg_p2_kw").value, p3_kw: document.getElementById("cfg_p3_kw").value });
     });
-
-    document.getElementById("btn_power_central")?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "toggle_power" }));
-
-    [1, 2, 3].forEach(i => document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "reset_parcial", poco: i })));
 
     client.connect(options);
 });
