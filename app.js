@@ -27,20 +27,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    // FUNÇÃO ENVIAR CORRIGIDA (Evita o erro Invalid argument undefined)
+    function enviar(topico, payload) {
+        if (client && client.isConnected() && topico) {
+            try {
+                const message = new Paho.MQTT.Message(JSON.stringify(payload));
+                message.destinationName = topico; // Define o tópico corretamente
+                client.send(message);
+                console.log("Enviado para:", topico, payload);
+            } catch (e) { console.error("Erro ao enviar MQTT:", e); }
+        } else {
+            console.warn("MQTT não conectado ou tópico ausente.");
+        }
+    }
+
     client.onMessageArrived = (message) => {
         try {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
             if (topic === "fenix/central/dashboard") {
-                // Preenche Status Geral
                 const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
                 fields.forEach(f => {
                     const el = document.getElementById("status_" + f);
                     if(el && data[f]) el.innerText = data[f];
                 });
 
-                // Preenche Dados dos Poços
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
                     if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
@@ -67,55 +79,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
-            if (topic === "fenix/central/historico") {
-                if (data.tipo === "relatorio_retro") {
-                    const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
-                    const l = document.getElementById("lista_historico_retro");
-                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong><i data-lucide="refresh-cw"></i> RETRO:</strong> ${txt}`; l.prepend(li); }
-                } else if (data.tipo === "evento") {
-                    const l = document.getElementById("history_list");
-                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${data.msg}`; l.prepend(li); }
-                }
-                lucide.createIcons();
-            }
-
-            // --- AJUSTE DE ALARMES ---
             if (topic === "fenix/central/alarmes") {
                 const alarmList = document.getElementById("alarm_list");
-                if (alarmList) {
-                    if (data.alertas && Array.isArray(data.alertas)) {
-                        alarmList.innerHTML = ""; 
-                        data.alertas.forEach(msg => {
-                            const li = document.createElement("li");
-                            li.style.color = "#fca5a5";
-                            li.innerHTML = `<strong><i data-lucide="alert-circle"></i></strong> ${msg}`;
-                            alarmList.appendChild(li);
-                        });
-                    }
+                if (alarmList && data.alertas) {
+                    alarmList.innerHTML = ""; 
+                    data.alertas.forEach(msg => {
+                        const li = document.createElement("li");
+                        li.style.color = "#fca5a5";
+                        li.innerHTML = `<strong><i data-lucide="alert-circle"></i></strong> ${msg}`;
+                        alarmList.appendChild(li);
+                    });
                 }
                 lucide.createIcons();
             }
-
-        } catch (e) { console.warn("Erro JSON"); }
+        } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    function enviar(t, p) { if (client.isConnected()) { client.send(new Paho.MQTT.Message(JSON.stringify(p), t)); } }
-
-    // BOTÕES DE SALVAR
+    // EVENT LISTENERS DOS BOTÕES
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
-        enviar("fenix/central/config", { rodizio_h: document.getElementById("cfg_rodizio_h").value, rodizio_m: document.getElementById("cfg_rodizio_m").value, retroA: document.getElementById("select_retroA").value, retroB: document.getElementById("select_retroB").value, manual: document.getElementById("select_manual").value });
-    });
-    document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
-        enviar("fenix/central/seguranca", { timeout_off: document.getElementById("cfg_timeout_offline").value, cloro_critico: document.getElementById("cfg_peso_critico").value });
-    });
-    document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
-        enviar("fenix/central/energia", { preco_kwh: document.getElementById("cfg_preco_kwh").value, p1_kw: document.getElementById("cfg_p1_kw").value, p2_kw: document.getElementById("cfg_p2_kw").value, p3_kw: document.getElementById("cfg_p3_kw").value });
+        enviar("fenix/central/config", { rodizio_h: document.getElementById("cfg_rodizio_h").value, rodizio_m: document.getElementById("cfg_rodizio_m").value });
     });
 
-    // --- AJUSTE BOTAO RESET ALARMES ---
     document.getElementById("btn_reset_alarmes")?.addEventListener("click", () => {
         enviar("fenix/central/comando", { acao: "reset_alarmes" });
-        document.getElementById("alarm_list").innerHTML = "<li style='color:#94a3b8'>Comando de reset enviado...</li>";
+        const list = document.getElementById("alarm_list");
+        if(list) list.innerHTML = "<li style='color:#94a3b8'>Reset enviado...</li>";
+    });
+
+    // CORREÇÃO: RESETAR P1, P2 E P3
+    [1, 2, 3].forEach(i => {
+        document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => {
+            enviar("fenix/central/comando", { acao: "reset_parcial", poco: i });
+        });
     });
 
     client.connect(options);
