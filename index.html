@@ -104,7 +104,9 @@
         <div class="card" style="margin-top: 20px; border-left: 5px solid #f87171;">
             <div class="card-header"><i data-lucide="shield-alert" style="color:#f87171"></i><span>SEGURANÇA</span></div>
             <div class="config-container">
-                <div class="config-row"><label>Offline Timeout (seg):</label><input type="number" id="cfg_timeout_offline" class="login-input" style="width:100%"></div>
+                <div class="config-row"><label>Timeout Poço Offline (seg):</label><input type="number" id="cfg_timeout_offline" class="login-input" style="width:100%"></div>
+                <div class="config-row"><label>Timeout Falha Feedback (seg):</label><input type="number" id="cfg_timeout_feedback" class="login-input" style="width:100%"></div>
+                <div class="config-row"><label>Tempo Máx Enchimento (min):</label><input type="number" id="cfg_timeout_enchimento" class="login-input" style="width:100%"></div>
                 <div class="config-row"><label>Peso Crítico Cloro (kg):</label><input type="number" id="cfg_peso_critico" class="login-input" style="width:100%" step="0.1"></div>
                 <button id="btn_salvar_seguranca" class="btn-save" style="width: 100%; background: #c0392b;"><i data-lucide="save"></i> SALVAR SEGURANÇA</button>
             </div>
@@ -197,26 +199,20 @@
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        
         const target = document.getElementById(tabId);
         if (target) target.style.display = 'block';
-        
         const activeBtn = document.querySelector(`[onclick*="${tabId}"]`);
         if (activeBtn) activeBtn.classList.add('active');
-        
         lucide.createIcons();
     }
-
     function openLogin() { document.getElementById("password_modal").style.display = "flex"; }
     function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
-
     function checkLogin() {
         if(document.getElementById("input_user").value === "Smart Control" && document.getElementById("input_pass").value === "1225") {
             closePasswordModal();
             switchTab('config');
         } else alert("Acesso Negado");
     }
-
     document.addEventListener("DOMContentLoaded", function() {
         const hSel = document.getElementById('cfg_rodizio_h');
         for(let i=0; i<=24; i++) hSel.add(new Option(i + "h", i));
