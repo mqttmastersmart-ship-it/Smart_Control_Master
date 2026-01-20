@@ -21,62 +21,62 @@
 </header>
 
 <nav class="tabs">
-    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn" data-tab="config">Ajustes</button>
-    <button class="tab-btn" data-tab="consumo">Consumo</button> 
-    <button class="tab-btn" data-tab="historico">Histórico</button>
-    <button class="tab-btn" data-tab="alarmes_aba" style="color: #f87171;">Alarmes</button> 
+    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button class="tab-btn" onclick="openLogin()">Ajustes</button>
+    <button class="tab-btn" onclick="switchTab('consumo')">Consumo</button> 
+    <button class="tab-btn" onclick="switchTab('historico')">Histórico</button>
+    <button class="tab-btn" onclick="switchTab('alarmes_aba')" style="color: #f87171;">Alarmes</button> 
 </nav>
 
-<section id="dashboard" class="tab-page visible" style="display: block;">
+<section id="dashboard" class="tab-page" style="display: block;">
     <div class="card main-status" style="margin: 0 20px 20px 20px;">
         <div class="card-header"><i data-lucide="activity"></i><span>STATUS GERAL</span></div>
         <div class="status-grid">
-            <div class="item"><label>Sistema:</label><div id="status_sistema" class="value">-</div></div>
-            <div class="item"><label>Passo:</label><div id="status_passo" class="value">-</div></div>
-            <div class="item"><label>Boia:</label><div id="status_boia" class="value">-</div></div>
-            <div class="item"><label>Operação:</label><div id="status_operacao" class="value">-</div></div>
-            <div class="item"><label>RetroA:</label><div id="status_retroA" class="value">-</div></div>
-            <div class="item"><label>Poço Ativo:</label><div id="status_ativo" class="value">-</div></div>
-            <div class="item"><label>RetroB:</label><div id="status_retroB" class="value">-</div></div>
-            <div class="item"><label>Manual Sel.:</label><div id="status_manual_sel" class="value">-</div></div>
-            <div class="item"><label>Rodízio (min):</label><div id="status_rodizio_min" class="value">-</div></div>
+            <div class="item"><label>SISTEMA:</label><div id="status_sistema" class="value">-</div></div>
+            <div class="item"><label>PASSO:</label><div id="status_passo" class="value">-</div></div>
+            <div class="item"><label>BOIA:</label><div id="status_boia" class="value">-</div></div>
+            <div class="item"><label>OPERAÇÃO:</label><div id="status_operacao" class="value">-</div></div>
+            <div class="item"><label>RETROA:</label><div id="status_retroA" class="value">-</div></div>
+            <div class="item"><label>POÇO ATIVO:</label><div id="status_ativo" class="value">-</div></div>
+            <div class="item"><label>RETROB:</label><div id="status_retroB" class="value">-</div></div>
+            <div class="item"><label>MANUAL SEL.:</label><div id="status_manual_sel" class="value">-</div></div>
+            <div class="item"><label>RODÍZIO (MIN):</label><div id="status_rodizio_min" class="value">-</div></div>
         </div>
     </div>
 
     <div class="pocos-grid">
         <div class="card poco-card">
             <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 01</span></div>
-            <div class="item-row"><label>Status:</label><div id="p1_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p1_motor"></i><div id="p1_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p1_timer" class="value" style="color: #38bdf8;">00:00</div></div>
+            <div class="item-row"><label>STATUS:</label><div id="p1_online" class="value">-</div></div>
+            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p1_motor"></i><div id="p1_fluxo" class="value">-</div></div></div>
+            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p1_timer" class="value" style="color: #38bdf8;">00:00</div></div>
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p1_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p1_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p1_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p1_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p1_data_dash" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p1_timer_parcial_dash" class="value">00:00</div></div>
+            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p1_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
+            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p1_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
         </div>
         <div class="card poco-card">
             <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 02</span></div>
-            <div class="item-row"><label>Status:</label><div id="p2_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p2_motor"></i><div id="p2_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p2_timer" class="value" style="color: #38bdf8;">00:00</div></div>
+            <div class="item-row"><label>STATUS:</label><div id="p2_online" class="value">-</div></div>
+            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p2_motor"></i><div id="p2_fluxo" class="value">-</div></div></div>
+            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p2_timer" class="value" style="color: #38bdf8;">00:00</div></div>
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p2_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p2_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p2_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p2_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p2_data_dash" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p2_timer_parcial_dash" class="value">00:00</div></div>
+            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p2_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
+            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p2_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
         </div>
         <div class="card poco-card">
             <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 03</span></div>
-            <div class="item-row"><label>Status:</label><div id="p3_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p3_motor"></i><div id="p3_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p3_timer" class="value" style="color: #38bdf8;">00:00</div></div>
+            <div class="item-row"><label>STATUS:</label><div id="p3_online" class="value">-</div></div>
+            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p3_motor"></i><div id="p3_fluxo" class="value">-</div></div></div>
+            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p3_timer" class="value" style="color: #38bdf8;">00:00</div></div>
             <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p3_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p3_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p3_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p3_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p3_data_dash" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p3_timer_parcial_dash" class="value">00:00</div></div>
+            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p3_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
+            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p3_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
         </div>
     </div>
 </section>
@@ -97,9 +97,9 @@
                 <div class="config-row" style="margin-bottom: 15px;"><label>Retro B:</label><select id="select_retroB" class="login-input" style="width:100%"><option value="1">Poço 1</option><option value="2">Poço 2</option><option value="3">Poço 3</option></select></div>
                 <div class="config-row" style="margin-bottom: 15px;"><label>Seleção Manual:</label><select id="select_manual" class="login-input" style="width:100%"><option value="1">Poço 1</option><option value="2">Poço 2</option><option value="3">Poço 3</option><option value="12">P1 & P2</option><option value="13">P1 & P3</option><option value="23">P2 & P3</option><option value="123">Todos</option></select></div>
                 <button id="btn_salvar_config" class="btn-save" style="width: 100%;"><i data-lucide="save"></i> SALVAR NA CENTRAL</button>
-                <button id="btn_power_central" class="btn-toggle-power" style="width: 100%; margin-top: 15px;">LIGAR/DESLIGAR CENTRAL</button>
             </div>
         </div>
+
         <div class="card" style="margin-top: 20px; border-left: 5px solid #f87171;">
             <div class="card-header"><i data-lucide="shield-alert" style="color:#f87171"></i><span>SEGURANÇA</span></div>
             <div class="config-container">
@@ -108,6 +108,7 @@
                 <button id="btn_salvar_seguranca" class="btn-save" style="width: 100%; background: #c0392b;"><i data-lucide="save"></i> SALVAR SEGURANÇA</button>
             </div>
         </div>
+
         <div class="card" style="margin-top: 20px;">
             <div class="card-header"><i data-lucide="zap"></i><span>CALIBRAÇÃO DE ENERGIA</span></div>
             <div class="config-container">
@@ -125,26 +126,26 @@
     <div class="consumo-grid">
         <div class="card card-consumo">
             <div class="card-header"><span>ANALÍTICO P1</span></div>
-            <div class="item-row"><label>Tempo Total (Vida):</label><div id="p1_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>Data Reset:</label><div id="p1_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p1_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>Custo Período:</label><div id="p1_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p1_timer_total" class="value">-</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p1_data_cons" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p1_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
+            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p1_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
             <button id="btn_reset_p1" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P1</button>
         </div>
         <div class="card card-consumo">
             <div class="card-header"><span>ANALÍTICO P2</span></div>
-            <div class="item-row"><label>Tempo Total (Vida):</label><div id="p2_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>Data Reset:</label><div id="p2_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p2_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>Custo Período:</label><div id="p2_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p2_timer_total" class="value">-</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p2_data_cons" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p2_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
+            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p2_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
             <button id="btn_reset_p2" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P2</button>
         </div>
         <div class="card card-consumo">
             <div class="card-header"><span>ANALÍTICO P3</span></div>
-            <div class="item-row"><label>Tempo Total (Vida):</label><div id="p3_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>Data Reset:</label><div id="p3_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>Timer Parcial:</label><div id="p3_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>Custo Período:</label><div id="p3_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
+            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p3_timer_total" class="value">-</div></div>
+            <div class="item-row"><label>DATA RESET:</label><div id="p3_data_cons" class="value">-</div></div>
+            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p3_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
+            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p3_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
             <button id="btn_reset_p3" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P3</button>
         </div>
     </div>
@@ -173,35 +174,45 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const hSel = document.getElementById('cfg_rodizio_h');
-        for(let i=0; i<=24; i++) { let o = document.createElement('option'); o.value=i; o.text=i + "h"; hSel.add(o); }
-        const mSel = document.getElementById('cfg_rodizio_m');
-        for(let i=0; i<60; i++) { let o = document.createElement('option'); o.value=i; o.text=i.toString().padStart(2, '0') + " min"; mSel.add(o); }
-        lucide.createIcons();
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const target = this.getAttribute('data-tab');
-                if (target === 'config') document.getElementById("password_modal").style.display = "flex";
-                else activateTab(target);
-            });
+    // FUNÇÃO QUE GARANTE A TROCA DAS ABAS
+    function switchTab(tabId) {
+        // Esconde todas as abas
+        document.querySelectorAll('.tab-page').forEach(page => {
+            page.style.display = 'none';
         });
-    });
-    function activateTab(tabId) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-page').forEach(p => { p.style.display = 'none'; p.classList.remove('visible'); });
-        const activePage = document.getElementById(tabId);
-        if (activePage) { activePage.style.display = 'block'; activePage.classList.add('visible'); }
-        document.querySelector(`.tab-btn[data-tab="${tabId}"]`).classList.add('active');
+        // Remove active de todos os botões
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Mostra a aba alvo
+        const target = document.getElementById(tabId);
+        if (target) target.style.display = 'block';
+        
+        // Ativa o botão correspondente
+        const activeBtn = document.querySelector(`[onclick*="${tabId}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
+        
         lucide.createIcons();
     }
+
+    function openLogin() { document.getElementById("password_modal").style.display = "flex"; }
+    function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
+
     function checkLogin() {
         if(document.getElementById("input_user").value === "Smart Control" && document.getElementById("input_pass").value === "1225") {
-            document.getElementById("password_modal").style.display = "none";
-            activateTab('config');
-        } else alert("Senha Incorreta");
+            closePasswordModal();
+            switchTab('config');
+        } else alert("Acesso Negado");
     }
-    function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const hSel = document.getElementById('cfg_rodizio_h');
+        for(let i=0; i<=24; i++) hSel.add(new Option(i + "h", i));
+        const mSel = document.getElementById('cfg_rodizio_m');
+        for(let i=0; i<60; i++) mSel.add(new Option(i.toString().padStart(2, '0') + "m", i));
+        lucide.createIcons();
+    });
 </script>
 <script src="app.js"></script>
 </body>
