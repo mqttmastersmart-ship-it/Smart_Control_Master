@@ -1,180 +1,123 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Fênix – Smart Control PRO</title>
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <link rel="stylesheet" href="style.css" />
-</head>
+document.addEventListener("DOMContentLoaded", () => {
+    const MQTT_CONFIG = {
+        host: "v05ef722.ala.us-east-1.emqxsl.com",
+        port: 8084,
+        path: "/mqtt",
+        clientId: "Fenix_App_" + Math.random().toString(16).substr(2, 8),
+        useSSL: true,
+        user: "Admin",
+        pass: "Admin"
+    };
 
-<body>
-<header class="top-header">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="logo.jpg" class="app-logo" style="border-radius: 8px; height: 40px;">
-        <div class="app-title">FÊNIX SMART CONTROL</div>
-    </div>
-    <div class="status-box" style="display: flex; gap: 10px;">
-        <div id="mqtt_status" class="status-off">MQTT: Off</div>
-        <div id="central_status" class="status-off">Central: Off</div>
-    </div>
-</header>
+    const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
-<nav class="tabs">
-    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn" data-tab="config">Ajustes</button>
-    <button class="tab-btn" data-tab="consumo">Consumo</button> 
-    <button class="tab-btn" data-tab="historico">Histórico</button>
-    <button class="tab-btn" data-tab="alarmes_aba" style="color: #f87171;">Alarmes</button> 
-</nav>
-
-<section id="dashboard" class="tab-page visible" style="display: block;">
-    <div class="card main-status" style="margin: 0 20px 20px 20px;">
-        <div class="card-header"><i data-lucide="activity"></i><span>STATUS GERAL</span></div>
-        <div class="status-grid">
-            <div class="item"><label>Sistema:</label><div id="status_sistema" class="value">-</div></div>
-            <div class="item"><label>Passo:</label><div id="status_passo" class="value">-</div></div>
-            <div class="item"><label>Boia:</label><div id="status_boia" class="value">-</div></div>
-            <div class="item"><label>Operação:</label><div id="status_operacao" class="value">-</div></div>
-            <div class="item"><label>RetroA:</label><div id="status_retroA" class="value">-</div></div>
-            <div class="item"><label>Poço da vez:</label><div id="status_ativo" class="value">-</div></div>
-            <div class="item"><label>RetroB:</label><div id="status_retroB" class="value">-</div></div>
-            <div class="item"><label>Manual Sel.:</label><div id="status_manual_sel" class="value">-</div></div>
-            <div class="item"><label>Rodízio (min):</label><div id="status_rodizio_min" class="value">-</div></div>
-        </div>
-    </div>
-
-    <div class="pocos-grid">
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 01</span></div>
-            <div class="item-row"><label>Status:</label><div id="p1_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p1_motor"></i><div id="p1_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p1_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p1_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p1_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p1_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 02</span></div>
-            <div class="item-row"><label>Status:</label><div id="p2_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p2_motor"></i><div id="p2_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p2_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p2_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p2_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p2_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 03</span></div>
-            <div class="item-row"><label>Status:</label><div id="p3_online" class="value">-</div></div>
-            <div class="item-row"><label>Fluxo:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p3_motor"></i><div id="p3_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>Timer Rodízio:</label><div id="p3_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>Data Reset:</label><div id="p3_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>Consumo Parcial:</label><div id="p3_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>Valor Estimado:</label><div id="p3_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-    </div>
-</section>
-
-<section id="config" class="tab-page" style="display: none;">
-    <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
-        <div class="card">
-            <div class="card-header"><i data-lucide="settings-2"></i><span>AJUSTES</span></div>
-            <div class="config-container">
-                <div class="config-row" style="margin-bottom: 15px;">
-                    <label>Rodízio:</label>
-                    <div style="display: flex; gap: 10px;">
-                        <select id="cfg_rodizio_h" class="login-input" style="flex:1"></select>
-                        <select id="cfg_rodizio_m" class="login-input" style="flex:1"></select>
-                    </div>
-                </div>
-                <button id="btn_salvar_config" class="btn-save" style="width:100%">SALVAR CENTRAL</button>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section id="consumo" class="tab-page" style="display: none;">
-    <div class="consumo-grid">
-        <div class="card"><div class="card-header"><span>ANALÍTICO P1</span></div><div id="p1_valor" class="value">R$ 0,00</div><div id="p1_kw_parcial" class="value">0 kWh</div><button id="btn_reset_p1" class="btn-reset-parcial">RESETAR P1</button></div>
-        <div class="card"><div class="card-header"><span>ANALÍTICO P2</span></div><div id="p2_valor" class="value">R$ 0,00</div><div id="p2_kw_parcial" class="value">0 kWh</div><button id="btn_reset_p2" class="btn-reset-parcial">RESETAR P2</button></div>
-        <div class="card"><div class="card-header"><span>ANALÍTICO P3</span></div><div id="p3_valor" class="value">R$ 0,00</div><div id="p3_kw_parcial" class="value">0 kWh</div><button id="btn_reset_p3" class="btn-reset-parcial">RESETAR P3</button></div>
-    </div>
-</section>
-
-<section id="historico" class="tab-page" style="display: none;">
-    <div class="card" style="margin: 0 20px;">
-        <div class="card-header"><i data-lucide="history"></i><span>LOG E RETROS</span></div>
-        <ul id="history_list" class="history-list"></ul>
-        <ul id="lista_historico_retro" class="history-list"></ul>
-    </div>
-</section>
-
-<section id="alarmes_aba" class="tab-page" style="display: none;">
-    <div class="card" style="margin: 0 20px;">
-        <div class="card-header"><i data-lucide="alert-triangle"></i><span>ALARMES</span></div>
-        <ul id="alarm_list" class="history-list"></ul>
-        <button id="btn_reset_alarme" class="btn-save">RESETAR ALARMES</button>
-    </div>
-</section>
-
-<div id="password_modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:#0f172a; padding:30px; border-radius:20px; text-align:center; width:300px;">
-        <h3 style="color:white;">ACESSO RESTRITO</h3>
-        <input type="text" id="input_user" placeholder="Usuário" class="login-input" style="width:100%; margin:10px 0;">
-        <input type="password" id="input_pass" placeholder="Senha" class="login-input" style="width:100%; margin-bottom:20px;">
-        <button onclick="checkLogin()" class="btn-save" style="width:100%">ENTRAR</button>
-        <button onclick="closePasswordModal()" style="color:gray; background:none; border:none; margin-top:10px;">Cancelar</button>
-    </div>
-</div>
-
-<script>
-    // ESTA FUNÇÃO PRECISA ESTAR AQUI NO FINAL
-    function activateTab(tabId) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-page').forEach(p => {
-            p.classList.remove('visible');
-            p.style.setProperty('display', 'none', 'important');
-        });
-
-        const activePage = document.getElementById(tabId);
-        if (activePage) {
-            activePage.classList.add('visible');
-            activePage.style.setProperty('display', 'block', 'important');
+    const options = {
+        useSSL: MQTT_CONFIG.useSSL,
+        timeout: 5,
+        userName: MQTT_CONFIG.user,
+        password: MQTT_CONFIG.pass,
+        onSuccess: () => {
+            console.log("MQTT Conectado");
+            document.getElementById("mqtt_status").innerText = "MQTT: On";
+            document.getElementById("mqtt_status").className = "status-on";
+            client.subscribe("fenix/central/#");
+        },
+        onFailure: (err) => {
+            console.error("Erro MQTT:", err);
+            document.getElementById("mqtt_status").innerText = "MQTT: Erro";
+            document.getElementById("mqtt_status").className = "status-off";
         }
-        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-        lucide.createIcons();
-    }
+    };
 
-    // Configura os Cliques
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = function() {
-            const target = this.getAttribute('data-tab');
-            if (target === 'config') document.getElementById("password_modal").style.display = "flex";
-            else activateTab(target);
-        };
+    client.onMessageArrived = (message) => {
+        try {
+            const data = JSON.parse(message.payloadString);
+            const topic = message.destinationName;
+
+            if (topic === "fenix/central/dashboard") {
+                if (data.sistema) document.getElementById("status_sistema").innerText = data.sistema;
+                if (data.passo) document.getElementById("status_passo").innerText = data.passo;
+                if (data.boia) document.getElementById("status_boia").innerText = data.boia;
+                if (data.operacao) document.getElementById("status_operacao").innerText = data.operacao;
+                if (data.ativo) document.getElementById("status_ativo").innerText = data.ativo;
+                if (data.rodizio_min) document.getElementById("status_rodizio_min").innerText = data.rodizio_min;
+                if (data.retroA) document.getElementById("status_retroA").innerText = data.retroA;
+                if (data.retroB) document.getElementById("status_retroB").innerText = data.retroB;
+                if (data.manual_sel) document.getElementById("status_manual_sel").innerText = data.manual_sel;
+
+                for (let i = 1; i <= 3; i++) {
+                    if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
+                    if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
+                    if (data[`p${i}_tmr`]) document.getElementById(`p${i}_timer`).innerText = data[`p${i}_tmr`];
+                    if (data[`p${i}_total`]) document.getElementById(`p${i}_timer_total`).innerText = data[`p${i}_total`];
+                    if (data[`p${i}_reset`]) {
+                        document.getElementById(`p${i}_data_dash`).innerText = data[`p${i}_reset`];
+                        document.getElementById(`p${i}_data_cons`).innerText = data[`p${i}_reset`];
+                    }
+                    if (data[`p${i}_parc`]) {
+                        const dP = document.getElementById(`p${i}_timer_parcial_dash`);
+                        const cP = document.getElementById(`p${i}_timer_parcial`);
+                        if (dP) dP.innerText = data[`p${i}_parc`];
+                        if (cP) cP.innerText = data[`p${i}_parc`];
+                    }
+                    if (data[`p${i}_kwh`]) document.getElementById(`p${i}_kwh_dash`).innerText = data[`p${i}_kwh`] + " kWh";
+                    if (data[`p${i}_rs`]) {
+                        document.getElementById(`p${i}_valor_dash`).innerText = "R$ " + data[`p${i}_rs`];
+                        document.getElementById(`p${i}_valor`).innerText = "R$ " + data[`p${i}_rs`];
+                    }
+                    const motor = document.getElementById(`p${i}_motor`);
+                    if (motor && data[`p${i}_flx`] === "Presente") motor.classList.add("spinning");
+                    else if (motor) motor.classList.remove("spinning");
+                }
+            }
+
+            if (topic === "fenix/central/historico") {
+                const h = new Date().toLocaleTimeString();
+                if (data.tipo === "relatorio_retro") {
+                    const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
+                    const l = document.getElementById("lista_historico_retro");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong><i data-lucide="refresh-cw"></i> RETRO:</strong> ${txt}`; l.prepend(li); }
+                } else if (data.tipo === "evento") {
+                    const l = document.getElementById("history_list");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${h}]</strong> ${data.msg}`; l.prepend(li); }
+                }
+                lucide.createIcons();
+            }
+        } catch (e) { console.warn("Erro JSON"); }
+    };
+
+    function enviar(t, p) { if (client.isConnected()) { const m = new Paho.MQTT.Message(JSON.stringify(p)); m.destinationName = t; client.send(m); } }
+
+    // BOTÕES DE SALVAR (NOVO)
+    document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
+        enviar("fenix/central/config", {
+            rodizio_h: document.getElementById("cfg_rodizio_h").value,
+            rodizio_m: document.getElementById("cfg_rodizio_m").value,
+            retroA: document.getElementById("select_retroA").value,
+            retroB: document.getElementById("select_retroB").value,
+            manual: document.getElementById("select_manual").value
+        });
     });
 
-    function checkLogin() {
-        if(document.getElementById("input_user").value === "Smart Control" && document.getElementById("input_pass").value === "1225") {
-            document.getElementById("password_modal").style.display = "none";
-            activateTab('config');
-        } else { alert("Senha Incorreta"); }
-    }
-    function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
+    document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
+        enviar("fenix/central/seguranca", {
+            timeout_off: document.getElementById("cfg_timeout_offline").value,
+            cloro_critico: document.getElementById("cfg_peso_critico").value
+        });
+    });
 
-    // Popular Selects
-    const hSel = document.getElementById('cfg_rodizio_h');
-    for(let i=0; i<=24; i++) { let o = document.createElement('option'); o.value=i; o.text=i + "h"; hSel.add(o); }
-    const mSel = document.getElementById('cfg_rodizio_m');
-    for(let i=0; i<60; i++) { let o = document.createElement('option'); o.value=i; o.text=i.toString().padStart(2, '0') + " min"; mSel.add(o); }
+    document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
+        enviar("fenix/central/energia", {
+            preco_kwh: document.getElementById("cfg_preco_kwh").value,
+            p1_kw: document.getElementById("cfg_p1_kw").value,
+            p2_kw: document.getElementById("cfg_p2_kw").value,
+            p3_kw: document.getElementById("cfg_p3_kw").value
+        });
+    });
 
-    lucide.createIcons();
-</script>
-<script src="app.js"></script>
-</body>
-</html>
+    document.getElementById("btn_power_central")?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "toggle_power" }));
+
+    [1, 2, 3].forEach(i => document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => enviar("fenix/central/comando", { acao: "reset_parcial", poco: i })));
+
+    client.connect(options);
+});
