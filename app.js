@@ -27,12 +27,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // FUNÇÃO ENVIAR CORRIGIDA (Evita o erro Invalid argument undefined)
     function enviar(topico, payload) {
         if (client && client.isConnected() && topico) {
             try {
                 const message = new Paho.MQTT.Message(JSON.stringify(payload));
-                message.destinationName = topico; // Define o tópico corretamente
+                message.destinationName = topico;
                 client.send(message);
                 console.log("Enviado para:", topico, payload);
             } catch (e) { console.error("Erro ao enviar MQTT:", e); }
@@ -92,12 +91,52 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 lucide.createIcons();
             }
+
+            if (topic === "fenix/central/historico") {
+                if (data.tipo === "relatorio_retro") {
+                    const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
+                    const l = document.getElementById("lista_historico_retro");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong><i data-lucide="refresh-cw"></i> RETRO:</strong> ${txt}`; l.prepend(li); }
+                } else if (data.tipo === "evento") {
+                    const l = document.getElementById("history_list");
+                    if (l) { const li = document.createElement("li"); li.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${data.msg}`; l.prepend(li); }
+                }
+                lucide.createIcons();
+            }
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    // EVENT LISTENERS DOS BOTÕES
+    // --- EVENT LISTENERS ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
-        enviar("fenix/central/config", { rodizio_h: document.getElementById("cfg_rodizio_h").value, rodizio_m: document.getElementById("cfg_rodizio_m").value });
+        enviar("fenix/central/config", { 
+            rodizio_h: document.getElementById("cfg_rodizio_h").value, 
+            rodizio_m: document.getElementById("cfg_rodizio_m").value,
+            retroA: document.getElementById("select_retroA").value,
+            retroB: document.getElementById("select_retroB").value,
+            manual: document.getElementById("select_manual").value
+        });
+    });
+
+    document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
+        enviar("fenix/central/seguranca", {
+            timeout_off: document.getElementById("cfg_timeout_offline").value,
+            timeout_feed: document.getElementById("cfg_timeout_feedback").value,
+            timeout_ench: document.getElementById("cfg_timeout_enchimento").value,
+            cloro_critico: document.getElementById("cfg_peso_critico").value
+        });
+    });
+
+    document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
+        enviar("fenix/central/energia", { 
+            preco_kwh: document.getElementById("cfg_preco_kwh").value, 
+            p1_kw: document.getElementById("cfg_p1_kw").value, 
+            p2_kw: document.getElementById("cfg_p2_kw").value, 
+            p3_kw: document.getElementById("cfg_p3_kw").value 
+        });
+    });
+
+    document.getElementById("btn_power_central")?.addEventListener("click", () => {
+        enviar("fenix/central/comando", { acao: "toggle_power" });
     });
 
     document.getElementById("btn_reset_alarmes")?.addEventListener("click", () => {
@@ -106,7 +145,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if(list) list.innerHTML = "<li style='color:#94a3b8'>Reset enviado...</li>";
     });
 
-    // CORREÇÃO: RESETAR P1, P2 E P3
     [1, 2, 3].forEach(i => {
         document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => {
             enviar("fenix/central/comando", { acao: "reset_parcial", poco: i });
