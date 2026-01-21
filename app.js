@@ -63,20 +63,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // --- BLOCO CORRIGIDO: CARREGAR VALORES DA MEMÓRIA ---
             if (topic === "fenix/central/config_atual") {
-                // Sincroniza os IDs do HTML com os dados enviados pelo ESP32
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
                 if(data.cfg_rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.cfg_rodizio_m;
                 if(data.select_retroA !== undefined) document.getElementById("select_retroA").value = data.select_retroA;
                 if(data.select_retroB !== undefined) document.getElementById("select_retroB").value = data.select_retroB;
                 if(data.select_manual !== undefined) document.getElementById("select_manual").value = data.select_manual;
 
-                // Segurança (Incluindo os novos campos de Feedback e Enchimento)
                 if(data.cfg_timeout_offline !== undefined) document.getElementById("cfg_timeout_offline").value = data.cfg_timeout_offline;
                 if(data.cfg_timeout_feedback !== undefined) document.getElementById("cfg_timeout_feedback").value = data.cfg_timeout_feedback;
                 if(data.cfg_timeout_enchimento !== undefined) document.getElementById("cfg_timeout_enchimento").value = data.cfg_timeout_enchimento;
                 if(data.cfg_peso_critico !== undefined) document.getElementById("cfg_peso_critico").value = data.cfg_peso_critico;
 
-                // Energia (Incluindo os novos campos de kW por poço)
+                // --- AJUSTE AQUI: CARREGAMENTO DOS DADOS DE ENERGIA ---
                 if(data.cfg_preco_kwh !== undefined) document.getElementById("cfg_preco_kwh").value = data.cfg_preco_kwh;
                 if(data.cfg_p1_kw !== undefined) document.getElementById("cfg_p1_kw").value = data.cfg_p1_kw;
                 if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
@@ -86,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (topic === "fenix/central/dashboard") {
-                // Atualização dos campos principais
                 const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
                 fields.forEach(f => {
                     const el = document.getElementById("status_" + f);
@@ -152,7 +149,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    // --- EVENT LISTENERS ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
         enviar("fenix/central/config", { 
             rodizio_h: document.getElementById("cfg_rodizio_h").value, 
