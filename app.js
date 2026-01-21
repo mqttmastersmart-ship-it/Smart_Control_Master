@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
-    // --- NOVA FUNÇÃO: ENVIAR COMANDO (TARA) ---
+    // --- FUNÇÃO: ENVIAR COMANDO (TARA) ---
     window.enviarComando = function(tipo) {
         if (client && client.isConnected()) {
             let payload = {};
@@ -27,14 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- INCREMENTO: FUNÇÃO PARA PEDIR SINCRONIZAÇÃO AO ABRIR ABA ---
-    // Esta função deve ser chamada no seu HTML/JS no momento que a senha for validada
+    // --- FUNÇÃO PARA PEDIR SINCRONIZAÇÃO (CHAMADA PELO ESCUTADOR) ---
     window.solicitarSincronizacaoAjustes = function() {
         if (client && client.isConnected()) {
             const message = new Paho.MQTT.Message(JSON.stringify({ acao: "sincronizar_ajustes" }));
             message.destinationName = "fenix/central/comando";
             client.send(message);
-            console.log("Solicitação de sincronização enviada após validação de acesso.");
+            console.log("Solicitação de sincronização enviada!");
         }
     };
 
@@ -158,7 +157,19 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    // --- EVENT LISTENERS ---
+    // --- ESCUTADOR DE ABA: CARREGA SOMENTE NO CLIQUE ---
+    // Procura o botão que abre a aba de ajustes para disparar a sincronização
+    const btnAjustes = document.querySelector('button[onclick*="ajustes"]') || document.getElementById("btn_ajustes");
+    if (btnAjustes) {
+        btnAjustes.addEventListener("click", () => {
+            // Delay de 200ms para garantir que o cliente MQTT esteja pronto e a aba visível
+            setTimeout(() => {
+                window.solicitarSincronizacaoAjustes();
+            }, 200);
+        });
+    }
+
+    // --- EVENT LISTENERS (BOTÕES SALVAR) ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
         enviar("fenix/central/config", { 
             rodizio_h: document.getElementById("cfg_rodizio_h").value, 
