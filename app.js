@@ -61,6 +61,24 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
+            // --- AJUSTE PARA CARREGAR VALORES DA MEMÓRIA ---
+            if (topic === "fenix/central/config_atual") {
+                if(data.rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.rodizio_h;
+                if(data.rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.rodizio_m;
+                if(data.retroA !== undefined) document.getElementById("select_retroA").value = data.retroA;
+                if(data.retroB !== undefined) document.getElementById("select_retroB").value = data.retroB;
+                if(data.manual !== undefined) document.getElementById("select_manual").value = data.manual;
+                if(data.timeout_off !== undefined) document.getElementById("cfg_timeout_offline").value = data.timeout_off;
+                if(data.timeout_feed !== undefined) document.getElementById("cfg_timeout_feedback").value = data.timeout_feed;
+                if(data.timeout_ench !== undefined) document.getElementById("cfg_timeout_enchimento").value = data.timeout_ench;
+                if(data.cloro_critico !== undefined) document.getElementById("cfg_peso_critico").value = data.cloro_critico;
+                if(data.preco_kwh !== undefined) document.getElementById("cfg_preco_kwh").value = data.preco_kwh;
+                if(data.p1_kw !== undefined) document.getElementById("cfg_p1_kw").value = data.p1_kw;
+                if(data.p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.p2_kw;
+                if(data.p3_kw !== undefined) document.getElementById("cfg_p3_kw").value = data.p3_kw;
+                console.log("Campos de Ajustes sincronizados com a Central.");
+            }
+
             if (topic === "fenix/central/dashboard") {
                 // Atualização dos campos principais
                 const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
