@@ -79,6 +79,25 @@
             <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p3_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
         </div>
     </div>
+
+    <div class="card" style="margin: 20px; border-top: 4px solid #4ade80;">
+        <div class="card-header">
+            <i data-lucide="test-tube"></i>
+            <span>PRODUTO QUÍMICO (CLORO)</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px;">
+            <div>
+                <label style="color: #94a3b8; font-size: 12px; display: block;">PESO ATUAL NO TANQUE:</label>
+                <div style="font-size: 24px; font-weight: bold; color: #4ade80;">
+                    <span id="cloro_kg_dash">0.00</span> kg
+                </div>
+            </div>
+            <button onclick="enviarComando('tara_balanca')" 
+                    style="background: #334155; color: white; border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="refresh-ccw" style="width:16px"></i> TARA (RESET)
+            </button>
+        </div>
+    </div>
 </section>
 
 <section id="config" class="tab-page" style="display: none;">
@@ -205,14 +224,32 @@
         if (activeBtn) activeBtn.classList.add('active');
         lucide.createIcons();
     }
+    
     function openLogin() { document.getElementById("password_modal").style.display = "flex"; }
     function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
+    
     function checkLogin() {
         if(document.getElementById("input_user").value === "Smart Control" && document.getElementById("input_pass").value === "1225") {
             closePasswordModal();
             switchTab('config');
         } else alert("Acesso Negado");
     }
+
+    // Função para enviar comandos via MQTT (Usada pelo botão de TARA)
+    function enviarComando(tipo) {
+        if (typeof client !== 'undefined' && client.connected) {
+            let payload = {};
+            if (tipo === 'tara_balanca') payload = { tara_balanca: 1 };
+            
+            const message = new Paho.MQTT.Message(JSON.stringify(payload));
+            message.destinationName = "fenix/central/comando";
+            client.send(message);
+            console.log("Enviado:", payload);
+        } else {
+            console.error("MQTT não conectado");
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const hSel = document.getElementById('cfg_rodizio_h');
         for(let i=0; i<=24; i++) hSel.add(new Option(i + "h", i));
