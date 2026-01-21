@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // --- FUNÇÃO PARA PEDIR SINCRONIZAÇÃO (CHAMADA PELO ESCUTADOR) ---
+    // --- FUNÇÃO PARA PEDIR SINCRONIZAÇÃO ---
     window.solicitarSincronizacaoAjustes = function() {
         if (client && client.isConnected()) {
             const message = new Paho.MQTT.Message(JSON.stringify({ acao: "sincronizar_ajustes" }));
@@ -45,7 +45,16 @@ document.addEventListener("DOMContentLoaded", () => {
         onSuccess: () => {
             document.getElementById("mqtt_status").innerText = "MQTT: On";
             document.getElementById("mqtt_status").className = "status-on";
+            
+            // 1. Inscrição nos tópicos
             client.subscribe("fenix/central/#");
+            
+            // --- ALTERAÇÃO REALIZADA: SINCRONIZAÇÃO AO CONECTAR ---
+            // Dispara o pedido de memória assim que conecta, para carregar os valores iniciais
+            setTimeout(() => {
+                window.solicitarSincronizacaoAjustes();
+                console.log("Sincronização automática inicial disparada após conexão MQTT.");
+            }, 500);
         },
         onFailure: () => {
             document.getElementById("mqtt_status").innerText = "MQTT: Erro";
@@ -157,12 +166,10 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    // --- ESCUTADOR DE ABA: CARREGA SOMENTE NO CLIQUE ---
-    // Procura o botão que abre a aba de ajustes para disparar a sincronização
+    // --- ESCUTADOR DE ABA: MANTIDO PARA SINCRONIZAÇÃO MANUAL NO CLIQUE ---
     const btnAjustes = document.querySelector('button[onclick*="ajustes"]') || document.getElementById("btn_ajustes");
     if (btnAjustes) {
         btnAjustes.addEventListener("click", () => {
-            // Delay de 200ms para garantir que o cliente MQTT esteja pronto e a aba visível
             setTimeout(() => {
                 window.solicitarSincronizacaoAjustes();
             }, 200);
