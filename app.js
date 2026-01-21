@@ -11,6 +11,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
+    // --- NOVA FUNÇÃO: ENVIAR COMANDO (TARA) ---
+    window.enviarComando = function(tipo) {
+        if (client && client.isConnected()) {
+            let payload = {};
+            if (tipo === 'tara_balanca') {
+                payload = { tara_balanca: 1 };
+            }
+            const message = new Paho.MQTT.Message(JSON.stringify(payload));
+            message.destinationName = "fenix/central/comando";
+            client.send(message);
+            console.log("Comando enviado:", payload);
+        } else {
+            alert("Erro: MQTT não conectado!");
+        }
+    };
+
     const options = {
         useSSL: true,
         timeout: 5,
@@ -46,11 +62,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const topic = message.destinationName;
 
             if (topic === "fenix/central/dashboard") {
+                // Atualização dos campos principais
                 const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
                 fields.forEach(f => {
                     const el = document.getElementById("status_" + f);
                     if(el && data[f]) el.innerText = data[f];
                 });
+
+                // ATUALIZAÇÃO DO CAMPO DE CLORO (NOVO)
+                const cloroEl = document.getElementById("cloro_kg_dash");
+                if (cloroEl && data.cloro_kg !== undefined) {
+                    cloroEl.innerText = data.cloro_kg;
+                }
 
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
