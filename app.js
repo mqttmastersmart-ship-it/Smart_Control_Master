@@ -69,11 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     if(el && data[f]) el.innerText = data[f];
                 });
 
-                // ATUALIZAÇÃO DO CAMPO DE CLORO (NOVO)
-                const cloroEl = document.getElementById("cloro_kg_dash");
-                if (cloroEl && data.cloro_kg !== undefined) {
-                    cloroEl.innerText = data.cloro_kg;
-                }
+                // ATUALIZAÇÃO DO CAMPO DE CLORO (SINCRONIZADO COM O JSON DO ESP32)
+               const cloroEl = document.getElementById("cloro_kg_dash");
+               if (cloroEl && data.cl_kg !== undefined) {
+               cloroEl.innerText = data.cl_kg.toFixed(2); // Usa cl_kg para bater com o ESP32
+              }
 
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
