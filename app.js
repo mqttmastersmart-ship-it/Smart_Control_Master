@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
-            // --- BLOCO ADICIONADO: CARREGAR VALORES DA MEMÓRIA NOS AJUSTES ---
+            // --- BLOCO CORRIGIDO: CARREGAR VALORES DA MEMÓRIA ---
             if (topic === "fenix/central/config_atual") {
                 // Sincroniza os IDs do HTML com os dados enviados pelo ESP32
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
@@ -70,10 +70,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(data.select_retroB !== undefined) document.getElementById("select_retroB").value = data.select_retroB;
                 if(data.select_manual !== undefined) document.getElementById("select_manual").value = data.select_manual;
 
-                // Campos de Segurança e Energia
+                // Segurança (Incluindo os novos campos de Feedback e Enchimento)
                 if(data.cfg_timeout_offline !== undefined) document.getElementById("cfg_timeout_offline").value = data.cfg_timeout_offline;
+                if(data.cfg_timeout_feedback !== undefined) document.getElementById("cfg_timeout_feedback").value = data.cfg_timeout_feedback;
+                if(data.cfg_timeout_enchimento !== undefined) document.getElementById("cfg_timeout_enchimento").value = data.cfg_timeout_enchimento;
                 if(data.cfg_peso_critico !== undefined) document.getElementById("cfg_peso_critico").value = data.cfg_peso_critico;
+
+                // Energia (Incluindo os novos campos de kW por poço)
                 if(data.cfg_preco_kwh !== undefined) document.getElementById("cfg_preco_kwh").value = data.cfg_preco_kwh;
+                if(data.cfg_p1_kw !== undefined) document.getElementById("cfg_p1_kw").value = data.cfg_p1_kw;
+                if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
+                if(data.cfg_p3_kw !== undefined) document.getElementById("cfg_p3_kw").value = data.cfg_p3_kw;
                 
                 console.log("Ajustes sincronizados com a memória da Central.");
             }
@@ -86,11 +93,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     if(el && data[f]) el.innerText = data[f];
                 });
 
-                // ATUALIZAÇÃO DO CAMPO DE CLORO (SINCRONIZADO COM O JSON DO ESP32)
-               const cloroEl = document.getElementById("cloro_kg_dash");
-               if (cloroEl && data.cl_kg !== undefined) {
-               cloroEl.innerText = data.cl_kg.toFixed(2); // Usa cl_kg para bater com o ESP32
-              }
+                const cloroEl = document.getElementById("cloro_kg_dash");
+                if (cloroEl && data.cl_kg !== undefined) {
+                    cloroEl.innerText = data.cl_kg.toFixed(2);
+                }
 
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
