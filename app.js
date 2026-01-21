@@ -27,6 +27,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
+    // --- INCREMENTO: FUNÇÃO PARA PEDIR SINCRONIZAÇÃO AO ABRIR ABA ---
+    // Esta função deve ser chamada no seu HTML/JS no momento que a senha for validada
+    window.solicitarSincronizacaoAjustes = function() {
+        if (client && client.isConnected()) {
+            const message = new Paho.MQTT.Message(JSON.stringify({ acao: "sincronizar_ajustes" }));
+            message.destinationName = "fenix/central/comando";
+            client.send(message);
+            console.log("Solicitação de sincronização enviada após validação de acesso.");
+        }
+    };
+
     const options = {
         useSSL: true,
         timeout: 5,
@@ -61,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
-            // --- BLOCO CORRIGIDO: CARREGAR VALORES DA MEMÓRIA ---
             if (topic === "fenix/central/config_atual") {
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
                 if(data.cfg_rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.cfg_rodizio_m;
@@ -74,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(data.cfg_timeout_enchimento !== undefined) document.getElementById("cfg_timeout_enchimento").value = data.cfg_timeout_enchimento;
                 if(data.cfg_peso_critico !== undefined) document.getElementById("cfg_peso_critico").value = data.cfg_peso_critico;
 
-                // --- AJUSTE AQUI: CARREGAMENTO DOS DADOS DE ENERGIA ---
                 if(data.cfg_preco_kwh !== undefined) document.getElementById("cfg_preco_kwh").value = data.cfg_preco_kwh;
                 if(data.cfg_p1_kw !== undefined) document.getElementById("cfg_p1_kw").value = data.cfg_p1_kw;
                 if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
@@ -149,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
+    // --- EVENT LISTENERS ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
         enviar("fenix/central/config", { 
             rodizio_h: document.getElementById("cfg_rodizio_h").value, 
