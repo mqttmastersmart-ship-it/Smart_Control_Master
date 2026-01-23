@@ -45,15 +45,11 @@ document.addEventListener("DOMContentLoaded", () => {
         onSuccess: () => {
             document.getElementById("mqtt_status").innerText = "MQTT: On";
             document.getElementById("mqtt_status").className = "status-on";
-            
-            // 1. Inscrição nos tópicos
             client.subscribe("fenix/central/#");
             
-            // --- ALTERAÇÃO REALIZADA: SINCRONIZAÇÃO AO CONECTAR ---
-            // Dispara o pedido de memória assim que conecta, para carregar os valores iniciais
             setTimeout(() => {
                 window.solicitarSincronizacaoAjustes();
-                console.log("Sincronização automática inicial disparada após conexão MQTT.");
+                console.log("Sincronização automática inicial disparada.");
             }, 500);
         },
         onFailure: () => {
@@ -97,6 +93,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
                 if(data.cfg_p3_kw !== undefined) document.getElementById("cfg_p3_kw").value = data.cfg_p3_kw;
                 
+                // INCREMENTO: SINCRONIZAÇÃO DE PESOS HIDRÁULICOS
+                if(data.p1_w !== undefined) document.getElementById("cfg_peso_p1").value = data.p1_w;
+                if(data.p2_w !== undefined) document.getElementById("cfg_peso_p2").value = data.p2_w;
+                if(data.p3_w !== undefined) document.getElementById("cfg_peso_p3").value = data.p3_w;
+                if(data.t_efic !== undefined) document.getElementById("cfg_tempo_eficiencia").value = data.t_efic;
+
                 console.log("Ajustes sincronizados com a memória da Central.");
             }
 
@@ -108,15 +110,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const cloroEl = document.getElementById("cloro_kg_dash");
-                if (cloroEl && data.cl_kg !== undefined) {
-                    cloroEl.innerText = data.cl_kg.toFixed(2);
-                }
+                if (cloroEl && data.cl_kg !== undefined) cloroEl.innerText = data.cl_kg.toFixed(2);
 
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
                     if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
                     if (data[`p${i}_tmr`]) document.getElementById(`p${i}_timer`).innerText = data[`p${i}_tmr`];
                     if (data[`p${i}_total`]) document.getElementById(`p${i}_timer_total`).innerText = data[`p${i}_total`];
+                    
+                    // INCREMENTO: ATUALIZAÇÃO DE HORA EQUIVALENTE E PARTIDAS
+                    if (data[`p${i}_hora_eq`] !== undefined) {
+                        const hEqDash = document.getElementById(`p${i}_hora_eq`);
+                        const hEqCons = document.getElementById(`p${i}_hora_eq_cons`);
+                        if (hEqDash) hEqDash.innerText = data[`p${i}_hora_eq`] + " Eq/h";
+                        if (hEqCons) hEqCons.innerText = data[`p${i}_hora_eq`] + " Eq/h";
+                    }
+                    if (data[`p${i}_partidas`] !== undefined) {
+                        const partDash = document.getElementById(`p${i}_partidas`);
+                        const partCons = document.getElementById(`p${i}_partidas_cons`);
+                        if (partDash) partDash.innerText = data[`p${i}_partidas`];
+                        if (partCons) partCons.innerText = data[`p${i}_partidas`];
+                    }
+
                     if (data[`p${i}_reset`]) {
                         document.getElementById(`p${i}_data_dash`).innerText = data[`p${i}_reset`];
                         document.getElementById(`p${i}_data_cons`).innerText = data[`p${i}_reset`];
@@ -166,16 +181,6 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) { console.warn("Erro no processamento da mensagem"); }
     };
 
-    // --- ESCUTADOR DE ABA: MANTIDO PARA SINCRONIZAÇÃO MANUAL NO CLIQUE ---
-    const btnAjustes = document.querySelector('button[onclick*="ajustes"]') || document.getElementById("btn_ajustes");
-    if (btnAjustes) {
-        btnAjustes.addEventListener("click", () => {
-            setTimeout(() => {
-                window.solicitarSincronizacaoAjustes();
-            }, 200);
-        });
-    }
-
     // --- EVENT LISTENERS (BOTÕES SALVAR) ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
         enviar("fenix/central/config", { 
@@ -205,14 +210,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
+    // INCREMENTO: SALVAR INTELIGÊNCIA HIDRÁULICA
+    document.getElementById("btn_salvar_hidraulica")?.addEventListener("click", () => {
+        enviar("fenix/central/config_hidraulica", {
+            p1_w: document.getElementById("cfg_peso_p1").value,
+            p2_w: document.getElementById("cfg_peso_p2").value,
+            p3_w: document.getElementById("cfg_peso_p3").value,
+            t_efic: document.getElementById("cfg_tempo_eficiencia").value
+        });
+    });
+
     document.getElementById("btn_power_central")?.addEventListener("click", () => {
         enviar("fenix/central/comando", { acao: "toggle_power" });
     });
 
     document.getElementById("btn_reset_alarmes")?.addEventListener("click", () => {
         enviar("fenix/central/comando", { acao: "reset_alarmes" });
-        const list = document.getElementById("alarm_list");
-        if(list) list.innerHTML = "<li style='color:#94a3b8'>Reset enviado...</li>";
     });
 
     [1, 2, 3].forEach(i => {
