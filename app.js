@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
-            // --- CORREÇÃO: USANDO .includes PARA MAIOR COMPATIBILIDADE ---
+            // --- SINCRONIZAÇÃO DE AJUSTES ---
             if (topic.includes("config_atual")) {
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
                 if(data.cfg_rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.cfg_rodizio_m;
@@ -94,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
                 if(data.cfg_p3_kw !== undefined) document.getElementById("cfg_p3_kw").value = data.cfg_p3_kw;
                 
-                // SINCRONIZAÇÃO DE PESOS HIDRÁULICOS
                 if(data.p1_w !== undefined) document.getElementById("cfg_peso_p1").value = data.p1_w;
                 if(data.p2_w !== undefined) document.getElementById("cfg_peso_p2").value = data.p2_w;
                 if(data.p3_w !== undefined) document.getElementById("cfg_peso_p3").value = data.p3_w;
@@ -103,57 +102,85 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Ajustes sincronizados!");
             }
 
+            // --- PROCESSAMENTO DO DASHBOARD ---
             if (topic.includes("dashboard")) {
-                const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
-                fields.forEach(f => {
-                    const el = document.getElementById("status_" + f);
-                    if(el && data[f] !== undefined) el.innerText = data[f];
-                });
+                console.log("Dados recebidos:", data);
 
+                // 1. Atualiza Status Geral
+                if (data.sistema) document.getElementById("status_sistema").innerText = data.sistema;
+                if (data.passo) document.getElementById("status_passo").innerText = data.passo;
+                if (data.boia) document.getElementById("status_boia").innerText = data.boia;
+                
+                document.getElementById("status_operacao").innerText = data.operacao || "Automático";
+                document.getElementById("status_retroA").innerText = data.retroA || "-";
+                document.getElementById("status_retroB").innerText = data.retroB || "-";
+                document.getElementById("status_ativo").innerText = data.ativo || "Nenhum";
+                document.getElementById("status_manual_sel").innerText = data.manual_sel || "-";
+                document.getElementById("status_rodizio_min").innerText = data.rodizio_min || "0";
+
+                // 2. Atualiza o Cloro
                 const cloroEl = document.getElementById("cloro_kg_dash");
-                if (cloroEl && data.cl_kg !== undefined) cloroEl.innerText = Number(data.cl_kg).toFixed(2);
+                if (cloroEl && data.cl_kg !== undefined) {
+                    cloroEl.innerText = Number(data.cl_kg).toFixed(2);
+                }
 
+                // 3. Atualiza os Poços 1, 2 e 3
                 for (let i = 1; i <= 3; i++) {
-                    if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
-                    if (data[`p${i}_flx`]) document.getElementById(`p${i}_fluxo`).innerText = data[`p${i}_flx`];
-                    if (data[`p${i}_tmr`]) document.getElementById(`p${i}_timer`).innerText = data[`p${i}_tmr`];
-                    if (data[`p${i}_total`]) document.getElementById(`p${i}_timer_total`).innerText = data[`p${i}_total`];
+                    const p_prefix = `p${i}_`;
                     
-                    // ATUALIZAÇÃO DE HORA EQUIVALENTE E PARTIDAS
-                    if (data[`p${i}_hora_eq`] !== undefined) {
-                        const hEqDash = document.getElementById(`p${i}_hora_eq`);
-                        const hEqCons = document.getElementById(`p${i}_hora_eq_cons`);
-                        if (hEqDash) hEqDash.innerText = data[`p${i}_hora_eq`] + " Eq/h";
-                        if (hEqCons) hEqCons.innerText = data[`p${i}_hora_eq`] + " Eq/h";
-                    }
-                    if (data[`p${i}_partidas`] !== undefined) {
-                        const partDash = document.getElementById(`p${i}_partidas`);
-                        const partCons = document.getElementById(`p${i}_partidas_cons`);
-                        if (partDash) partDash.innerText = data[`p${i}_partidas`];
-                        if (partCons) partCons.innerText = data[`p${i}_partidas`];
+                    // Status e Fluxo
+                    const st = document.getElementById(p_prefix + "online");
+                    if (st && data[p_prefix + "st"]) st.innerText = data[p_prefix + "st"];
+                    
+                    const flx = document.getElementById(p_prefix + "fluxo");
+                    if (flx && data[p_prefix + "flx"]) flx.innerText = data[p_prefix + "flx"];
+
+                    // Horas Equivalentes e Partidas
+                    const hEq = document.getElementById(p_prefix + "hora_eq");
+                    const hEqCons = document.getElementById(p_prefix + "hora_eq_cons");
+                    if (data[p_prefix + "hora_eq"] !== undefined) {
+                        const val = data[p_prefix + "hora_eq"] + " Eq/h";
+                        if (hEq) hEq.innerText = val;
+                        if (hEqCons) hEqCons.innerText = val;
                     }
 
-                    if (data[`p${i}_reset`]) {
-                        document.getElementById(`p${i}_data_dash`).innerText = data[`p${i}_reset`];
-                        document.getElementById(`p${i}_data_cons`).innerText = data[`p${i}_reset`];
+                    const part = document.getElementById(p_prefix + "partidas");
+                    const partCons = document.getElementById(p_prefix + "partidas_cons");
+                    if (data[p_prefix + "partidas"] !== undefined) {
+                        const val = data[p_prefix + "partidas"];
+                        if (part) part.innerText = val;
+                        if (partCons) partCons.innerText = val;
                     }
-                    if (data[`p${i}_parc`]) {
-                        const dP = document.getElementById(`p${i}_timer_parcial_dash`);
-                        const cP = document.getElementById(`p${i}_timer_parcial`);
-                        if (dP) dP.innerText = data[`p${i}_parc`];
-                        if (cP) cP.innerText = data[`p${i}_parc`];
+
+                    // Timers e Energia
+                    if (data[p_prefix + "tmr"]) document.getElementById(p_prefix + "timer").innerText = data[p_prefix + "tmr"];
+                    if (data[p_prefix + "total"]) document.getElementById(p_prefix + "timer_total").innerText = data[p_prefix + "total"];
+                    
+                    if (data[p_prefix + "parc"]) {
+                        const dP = document.getElementById(p_prefix + "timer_parcial_dash");
+                        const cP = document.getElementById(p_prefix + "timer_parcial");
+                        if (dP) dP.innerText = data[p_prefix + "parc"];
+                        if (cP) cP.innerText = data[p_prefix + "parc"];
                     }
-                    if (data[`p${i}_kwh`]) document.getElementById(`p${i}_kwh_dash`).innerText = data[`p${i}_kwh`] + " kWh";
-                    if (data[`p${i}_rs`]) {
-                        document.getElementById(`p${i}_valor_dash`).innerText = "R$ " + data[`p${i}_rs`];
-                        document.getElementById(`p${i}_valor`).innerText = "R$ " + data[`p${i}_rs`];
+
+                    if (data[p_prefix + "kwh"]) document.getElementById(p_prefix + "kwh_dash").innerText = data[p_prefix + "kwh"] + " kWh";
+
+                    if (data[p_prefix + "rs"]) {
+                        const val = "R$ " + data[p_prefix + "rs"];
+                        if (document.getElementById(p_prefix + "valor_dash")) document.getElementById(p_prefix + "valor_dash").innerText = val;
+                        if (document.getElementById(p_prefix + "valor")) document.getElementById(p_prefix + "valor").innerText = val;
                     }
-                    const motor = document.getElementById(`p${i}_motor`);
-                    if (motor && data[`p${i}_flx`] === "Presente") motor.classList.add("spinning");
-                    else if (motor) motor.classList.remove("spinning");
+                    
+                    // Animação do motor
+                    const motor = document.getElementById(p_prefix + "motor");
+                    if (motor) {
+                        if (data[p_prefix + "flx"] === "Presente") motor.classList.add("spinning");
+                        else motor.classList.remove("spinning");
+                    }
                 }
             }
 
+            // --- ALARMES E HISTÓRICO ---
             if (topic.includes("alarmes")) {
                 const alarmList = document.getElementById("alarm_list");
                 if (alarmList && data.alertas) {
@@ -179,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 lucide.createIcons();
             }
-        } catch (e) { console.warn("Erro no processamento da mensagem"); }
+        } catch (e) { console.warn("Erro no processamento da mensagem", e); }
     };
 
     // --- EVENT LISTENERS (BOTÕES SALVAR) ---
@@ -211,7 +238,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // SALVAR INTELIGÊNCIA HIDRÁULICA (COM CONVERSÃO PARA NÚMERO)
     document.getElementById("btn_salvar_hidraulica")?.addEventListener("click", () => {
         enviar("fenix/central/config_hidraulica", {
             p1_w: Number(document.getElementById("cfg_peso_p1").value),
