@@ -76,7 +76,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
-            if (topic === "fenix/central/config_atual") {
+            // --- CORREÇÃO: USANDO .includes PARA MAIOR COMPATIBILIDADE ---
+            if (topic.includes("config_atual")) {
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
                 if(data.cfg_rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.cfg_rodizio_m;
                 if(data.select_retroA !== undefined) document.getElementById("select_retroA").value = data.select_retroA;
@@ -93,24 +94,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 if(data.cfg_p2_kw !== undefined) document.getElementById("cfg_p2_kw").value = data.cfg_p2_kw;
                 if(data.cfg_p3_kw !== undefined) document.getElementById("cfg_p3_kw").value = data.cfg_p3_kw;
                 
-                // INCREMENTO: SINCRONIZAÇÃO DE PESOS HIDRÁULICOS
+                // SINCRONIZAÇÃO DE PESOS HIDRÁULICOS
                 if(data.p1_w !== undefined) document.getElementById("cfg_peso_p1").value = data.p1_w;
                 if(data.p2_w !== undefined) document.getElementById("cfg_peso_p2").value = data.p2_w;
                 if(data.p3_w !== undefined) document.getElementById("cfg_peso_p3").value = data.p3_w;
                 if(data.t_efic !== undefined) document.getElementById("cfg_tempo_eficiencia").value = data.t_efic;
 
-                console.log("Ajustes sincronizados com a memória da Central.");
+                console.log("Ajustes sincronizados!");
             }
 
-            if (topic === "fenix/central/dashboard") {
+            if (topic.includes("dashboard")) {
                 const fields = ['sistema', 'passo', 'boia', 'operacao', 'ativo', 'rodizio_min', 'retroA', 'retroB', 'manual_sel'];
                 fields.forEach(f => {
                     const el = document.getElementById("status_" + f);
-                    if(el && data[f]) el.innerText = data[f];
+                    if(el && data[f] !== undefined) el.innerText = data[f];
                 });
 
                 const cloroEl = document.getElementById("cloro_kg_dash");
-                if (cloroEl && data.cl_kg !== undefined) cloroEl.innerText = data.cl_kg.toFixed(2);
+                if (cloroEl && data.cl_kg !== undefined) cloroEl.innerText = Number(data.cl_kg).toFixed(2);
 
                 for (let i = 1; i <= 3; i++) {
                     if (data[`p${i}_st`]) document.getElementById(`p${i}_online`).innerText = data[`p${i}_st`];
@@ -118,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (data[`p${i}_tmr`]) document.getElementById(`p${i}_timer`).innerText = data[`p${i}_tmr`];
                     if (data[`p${i}_total`]) document.getElementById(`p${i}_timer_total`).innerText = data[`p${i}_total`];
                     
-                    // INCREMENTO: ATUALIZAÇÃO DE HORA EQUIVALENTE E PARTIDAS
+                    // ATUALIZAÇÃO DE HORA EQUIVALENTE E PARTIDAS
                     if (data[`p${i}_hora_eq`] !== undefined) {
                         const hEqDash = document.getElementById(`p${i}_hora_eq`);
                         const hEqCons = document.getElementById(`p${i}_hora_eq_cons`);
@@ -153,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
-            if (topic === "fenix/central/alarmes") {
+            if (topic.includes("alarmes")) {
                 const alarmList = document.getElementById("alarm_list");
                 if (alarmList && data.alertas) {
                     alarmList.innerHTML = ""; 
@@ -167,7 +168,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 lucide.createIcons();
             }
 
-            if (topic === "fenix/central/historico") {
+            if (topic.includes("historico")) {
                 if (data.tipo === "relatorio_retro") {
                     const txt = `Data: ${data.data} | Início: ${data.inicio} | Fim: ${data.fim} | Poços: ${data.pocos}`;
                     const l = document.getElementById("lista_historico_retro");
@@ -184,40 +185,41 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- EVENT LISTENERS (BOTÕES SALVAR) ---
     document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
         enviar("fenix/central/config", { 
-            rodizio_h: document.getElementById("cfg_rodizio_h").value, 
-            rodizio_m: document.getElementById("cfg_rodizio_m").value,
-            retroA: document.getElementById("select_retroA").value,
-            retroB: document.getElementById("select_retroB").value,
-            manual: document.getElementById("select_manual").value
+            rodizio_h: Number(document.getElementById("cfg_rodizio_h").value), 
+            rodizio_m: Number(document.getElementById("cfg_rodizio_m").value),
+            retroA: Number(document.getElementById("select_retroA").value),
+            retroB: Number(document.getElementById("select_retroB").value),
+            manual: Number(document.getElementById("select_manual").value)
         });
     });
 
     document.getElementById("btn_salvar_seguranca")?.addEventListener("click", () => {
         enviar("fenix/central/seguranca", {
-            timeout_off: document.getElementById("cfg_timeout_offline").value,
-            timeout_feed: document.getElementById("cfg_timeout_feedback").value,
-            timeout_ench: document.getElementById("cfg_timeout_enchimento").value,
-            cloro_critico: document.getElementById("cfg_peso_critico").value
+            timeout_off: Number(document.getElementById("cfg_timeout_offline").value),
+            timeout_feed: Number(document.getElementById("cfg_timeout_feedback").value),
+            timeout_ench: Number(document.getElementById("cfg_timeout_enchimento").value),
+            cloro_critico: Number(document.getElementById("cfg_peso_critico").value)
         });
     });
 
     document.getElementById("btn_salvar_energia")?.addEventListener("click", () => {
         enviar("fenix/central/energia", { 
-            preco_kwh: document.getElementById("cfg_preco_kwh").value, 
-            p1_kw: document.getElementById("cfg_p1_kw").value, 
-            p2_kw: document.getElementById("cfg_p2_kw").value, 
-            p3_kw: document.getElementById("cfg_p3_kw").value 
+            preco_kwh: Number(document.getElementById("cfg_preco_kwh").value), 
+            p1_kw: Number(document.getElementById("cfg_p1_kw").value), 
+            p2_kw: Number(document.getElementById("cfg_p2_kw").value), 
+            p3_kw: Number(document.getElementById("cfg_p3_kw").value) 
         });
     });
 
-    // INCREMENTO: SALVAR INTELIGÊNCIA HIDRÁULICA
+    // SALVAR INTELIGÊNCIA HIDRÁULICA (COM CONVERSÃO PARA NÚMERO)
     document.getElementById("btn_salvar_hidraulica")?.addEventListener("click", () => {
         enviar("fenix/central/config_hidraulica", {
-            p1_w: document.getElementById("cfg_peso_p1").value,
-            p2_w: document.getElementById("cfg_peso_p2").value,
-            p3_w: document.getElementById("cfg_peso_p3").value,
-            t_efic: document.getElementById("cfg_tempo_eficiencia").value
+            p1_w: Number(document.getElementById("cfg_peso_p1").value),
+            p2_w: Number(document.getElementById("cfg_peso_p2").value),
+            p3_w: Number(document.getElementById("cfg_peso_p3").value),
+            t_efic: Number(document.getElementById("cfg_tempo_eficiencia").value)
         });
+        alert("Configurações Hidráulicas Enviadas!");
     });
 
     document.getElementById("btn_power_central")?.addEventListener("click", () => {
