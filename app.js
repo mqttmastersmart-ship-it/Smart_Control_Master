@@ -11,31 +11,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const client = new Paho.MQTT.Client(MQTT_CONFIG.host, MQTT_CONFIG.port, MQTT_CONFIG.path, MQTT_CONFIG.clientId);
 
-    // FUNÇÃO: ENVIAR COMANDOS
+    // FUNÇÃO: ENVIAR COMANDOS GLOBAIS
     window.enviarComando = function(tipo) {
         if (client && client.isConnected()) {
             let payload = (tipo === 'tara_balanca') ? { tara_balanca: 1 } : { acao: tipo };
             const message = new Paho.MQTT.Message(JSON.stringify(payload));
             message.destinationName = "fenix/central/comando";
             client.send(message);
+            console.log("Comando enviado:", payload);
         }
     };
+
+    // FUNÇÃO AUXILIAR PARA ENVIAR JSON
+    function enviarJSON(topico, objeto) {
+        if (client && client.isConnected()) {
+            const message = new Paho.MQTT.Message(JSON.stringify(objeto));
+            message.destinationName = topico;
+            client.send(message);
+            console.log("Enviado para " + topico + ":", objeto);
+        } else {
+            alert("Erro: MQTT desconectado");
+        }
+    }
 
     const options = {
         useSSL: true,
         timeout: 5,
-        userName: "Admin",
-        password: "Admin",
+        userName: MQTT_CONFIG.user,
+        password: MQTT_CONFIG.pass,
         onSuccess: () => {
             document.getElementById("mqtt_status").innerText = "MQTT: On";
             document.getElementById("mqtt_status").className = "status-on";
             client.subscribe("fenix/central/#");
             
-            // Pede sincronização imediata
+            // Solicita dados da memória do ESP32
             setTimeout(() => {
-                const msg = new Paho.MQTT.Message(JSON.stringify({ acao: "sincronizar_ajustes" }));
-                msg.destinationName = "fenix/central/comando";
-                client.send(msg);
+                enviarJSON("fenix/central/comando", { acao: "sincronizar_ajustes" });
             }, 1000);
         },
         onFailure: () => {
@@ -49,76 +60,64 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = JSON.parse(message.payloadString);
             const topic = message.destinationName;
 
-            // --- 1. SINCRONIZAR AJUSTES (Aba Configurações) ---
+            // 1. RECEBENDO AJUSTES DA MEMÓRIA
             if (topic.includes("config_atual")) {
-                console.log("Ajustes recebidos:", data);
-                
-                // Mapeamento das chaves do ESP para os IDs do seu HTML
                 if(data.cfg_rodizio_h !== undefined) document.getElementById("cfg_rodizio_h").value = data.cfg_rodizio_h;
-                if(data.cfg_rodizio_m !== undefined) document.getElementById("cfg_rodizio_m").value = data.cfg_rodizio_m || 0;
-                
-                // Pesos e Inteligência
                 if(data.p1_w !== undefined) document.getElementById("cfg_peso_p1").value = data.p1_w;
                 if(data.p2_w !== undefined) document.getElementById("cfg_peso_p2").value = data.p2_w;
                 if(data.p3_w !== undefined) document.getElementById("cfg_peso_p3").value = data.p3_w;
                 if(data.t_efic !== undefined) document.getElementById("cfg_tempo_eficiencia").value = data.t_efic;
-
-                // Segurança e Outros
-                if(data.cfg_timeout_offline !== undefined) document.getElementById("cfg_timeout_offline").value = data.cfg_timeout_offline;
-                if(data.cfg_timeout_feedback !== undefined) document.getElementById("cfg_timeout_feedback").value = data.cfg_timeout_feedback;
-                if(data.cfg_timeout_enchimento !== undefined) document.getElementById("cfg_timeout_enchimento").value = data.cfg_timeout_enchimento;
-                if(data.cfg_peso_critico !== undefined) document.getElementById("cfg_peso_critico").value = data.cfg_peso_critico;
+                console.log("Ajustes sincronizados!");
             }
 
-            // --- 2. DASHBOARD (Status Geral e Poços) ---
+            // 2. RECEBENDO DADOS DO DASHBOARD
             if (topic.includes("dashboard")) {
-                // Status Geral da Central
-                if(data.sistema) document.getElementById("status_sistema").innerText = data.sistema;
-                if(data.passo) document.getElementById("status_passo").innerText = data.passo;
-                if(data.boia) document.getElementById("status_boia").innerText = data.boia;
-                if(data.ativo !== undefined) document.getElementById("status_ativo").innerText = data.ativo || "Nenhum";
+                // Status Geral
+                document.getElementById("status_sistema").innerText = data.sistema || "-";
+                document.getElementById("status_passo").innerText = data.passo || "-";
+                document.getElementById("status_boia").innerText = data.boia || "-";
+                document.getElementById("status_ativo").innerText = data.ativo || "Nenhum";
                 
-                // Campos que estavam faltando no Dashboard
-                document.getElementById("status_operacao").innerText = "Automático";
-                document.getElementById("status_rodizio_min").innerText = data.rodizio_min || "0";
-
                 // Cloro
                 if(data.cl_kg !== undefined) document.getElementById("cloro_kg_dash").innerText = Number(data.cl_kg).toFixed(2);
 
-                // Loop para os 3 Poços
+                // Dados de cada Poço (Loop 1 a 3)
                 for (let i = 1; i <= 3; i++) {
-                    const st = data[`p${i}_st`];
-                    const flx = data[`p${i}_flx`];
-                    const hEq = data[`p${i}_hora_eq`];
-                    const part = data[`p${i}_partidas`];
-                    const total = data[`p${i}_total`];
-                    const parc = data[`p${i}_parc`];
-                    const kwh = data[`p${i}_kwh`];
-                    const rs = data[`p${i}_rs`];
-
-                    if(st) document.getElementById(`p${i}_online`).innerText = st;
-                    if(flx) document.getElementById(`p${i}_fluxo`).innerText = flx;
-                    if(hEq) document.getElementById(`p${i}_hora_eq`).innerText = hEq + " Eq/h";
-                    if(part !== undefined) document.getElementById(`p${i}_partidas`).innerText = part;
-                    
-                    // Horímetros e Energia
-                    if(total) document.getElementById(`p${i}_timer_total`).innerText = total;
-                    if(parc) document.getElementById(`p${i}_timer_parcial_dash`).innerText = parc;
-                    if(kwh) document.getElementById(`p${i}_kwh_dash`).innerText = kwh + " kWh";
-                    if(rs) document.getElementById(`p${i}_valor_dash`).innerText = "R$ " + rs;
+                    const p = `p${i}_`;
+                    if (data[p+'st']) document.getElementById(p+'online').innerText = data[p+'st'];
+                    if (data[p+'flx']) document.getElementById(p+'fluxo').innerText = data[p+'flx'];
+                    if (data[p+'hora_eq']) {
+                        document.getElementById(p+'hora_eq').innerText = data[p+'hora_eq'] + " Eq/h";
+                        if(document.getElementById(p+'hora_eq_cons')) document.getElementById(p+'hora_eq_cons').innerText = data[p+'hora_eq'] + " Eq/h";
+                    }
+                    if (data[p+'partidas'] !== undefined) {
+                        document.getElementById(p+'partidas').innerText = data[p+'partidas'];
+                        if(document.getElementById(p+'partidas_cons')) document.getElementById(p+'partidas_cons').innerText = data[p+'partidas'];
+                    }
+                    if (data[p+'total']) document.getElementById(p+'timer_total').innerText = data[p+'total'];
+                    if (data[p+'parc']) {
+                        if(document.getElementById(p+'timer_parcial_dash')) document.getElementById(p+'timer_parcial_dash').innerText = data[p+'parc'];
+                        if(document.getElementById(p+'timer_parcial')) document.getElementById(p+'timer_parcial').innerText = data[p+'parc'];
+                    }
+                    if (data[p+'rs']) {
+                        if(document.getElementById(p+'valor_dash')) document.getElementById(p+'valor_dash').innerText = "R$ " + data[p+'rs'];
+                        if(document.getElementById(p+'valor')) document.getElementById(p+'valor').innerText = "R$ " + data[p+'rs'];
+                    }
 
                     // Animação do motor
-                    const motorIcon = document.getElementById(`p${i}_motor`);
-                    if(motorIcon) {
-                        if(flx === "Presente") motorIcon.classList.add("spinning");
-                        else motorIcon.classList.remove("spinning");
+                    const motor = document.getElementById(p+'motor');
+                    if (motor) {
+                        if (data[p+'flx'] === "Presente") motor.classList.add("spinning");
+                        else motor.classList.remove("spinning");
                     }
                 }
             }
-        } catch (e) { console.error("Erro no processamento:", e); }
+        } catch (e) { console.error("Erro no processamento do JSON:", e); }
     };
 
-    // BOTÃO SALVAR HIDRÁULICA
+    // --- EVENTOS DOS BOTÕES SALVAR ---
+    
+    // Salvar Hidráulica (Pesos)
     document.getElementById("btn_salvar_hidraulica")?.addEventListener("click", () => {
         const payload = {
             p1_w: parseFloat(document.getElementById("cfg_peso_p1").value),
@@ -126,10 +125,33 @@ document.addEventListener("DOMContentLoaded", () => {
             p3_w: parseFloat(document.getElementById("cfg_peso_p3").value),
             t_efic: parseInt(document.getElementById("cfg_tempo_eficiencia").value)
         };
-        const message = new Paho.MQTT.Message(JSON.stringify(payload));
-        message.destinationName = "fenix/central/config_hidraulica"; 
-        client.send(message);
-        alert("Configurações enviadas!");
+        enviarJSON("fenix/central/config_hidraulica", payload);
+        alert("Configurações Hidráulicas Enviadas!");
+    });
+
+    // Salvar Configurações Gerais (Rodízio)
+    document.getElementById("btn_salvar_config")?.addEventListener("click", () => {
+        const payload = {
+            rodizio_h: parseInt(document.getElementById("cfg_rodizio_h").value),
+            rodizio_m: parseInt(document.getElementById("cfg_rodizio_m").value),
+            retroA: parseInt(document.getElementById("select_retroA").value),
+            retroB: parseInt(document.getElementById("select_retroB").value),
+            manual: parseInt(document.getElementById("select_manual").value)
+        };
+        enviarJSON("fenix/central/config", payload);
+        alert("Configurações Gerais Enviadas!");
+    });
+
+    // Reset de Poços Individuais
+    [1, 2, 3].forEach(i => {
+        document.getElementById(`btn_reset_p${i}`)?.addEventListener("click", () => {
+            enviarJSON("fenix/central/comando", { acao: "reset_parcial", poco: i });
+        });
+    });
+
+    // Power Central
+    document.getElementById("btn_power_central")?.addEventListener("click", () => {
+        window.enviarComando("toggle_power");
     });
 
     client.connect(options);
