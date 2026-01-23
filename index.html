@@ -1,285 +1,57 @@
-<!doctype html>
-<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-br">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Fênix – Smart Control PRO</title>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Hídrica Pro</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top-header">
-    <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="logo.jpg" class="app-logo" style="border-radius: 8px; height: 40px;">
-        <div class="app-title">FÊNIX SMART CONTROL</div>
-    </div>
-    <div class="status-box">
-        <div id="mqtt_status" class="status-off">MQTT: Off</div>
-        <div id="central_status" class="status-off">Central: Off</div>
-    </div>
-</header>
 
-<nav class="tabs">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-    <button class="tab-btn" onclick="openLogin()">Ajustes</button>
-    <button class="tab-btn" onclick="switchTab('consumo')">Consumo</button> 
-    <button class="tab-btn" onclick="switchTab('historico')">Histórico</button>
-    <button class="tab-btn" onclick="switchTab('alarmes_aba')" style="color: #f87171;">Alarmes</button> 
-</nav>
+    <div class="app-container">
+        <nav class="tab-menu">
+            <button class="tab-btn active">Principal</button>
+            <button class="tab-btn">Poços</button>
+            <button class="tab-btn">Config</button>
+        </nav>
 
-<section id="dashboard" class="tab-page" style="display: block;">
-    <div class="card main-status" style="margin: 0 20px 20px 20px;">
-        <div class="card-header"><i data-lucide="activity"></i><span>STATUS GERAL</span></div>
-        <div class="status-grid">
-            <div class="item"><label>SISTEMA:</label><div id="status_sistema" class="value">-</div></div>
-            <div class="item"><label>PASSO:</label><div id="status_passo" class="value">-</div></div>
-            <div class="item"><label>BOIA:</label><div id="status_boia" class="value">-</div></div>
-            <div class="item"><label>OPERAÇÃO:</label><div id="status_operacao" class="value">-</div></div>
-            <div class="item"><label>RETROA:</label><div id="status_retroA" class="value">-</div></div>
-            <div class="item"><label>POÇO ATIVO:</label><div id="status_ativo" class="value">-</div></div>
-            <div class="item"><label>RETROB:</label><div id="status_retroB" class="value">-</div></div>
-            <div class="item"><label>MANUAL SEL.:</label><div id="status_manual_sel" class="value">-</div></div>
-            <div class="item"><label>RODÍZIO (MIN):</label><div id="status_rodizio_min" class="value">-</div></div>
-        </div>
-    </div>
-
-    <div class="pocos-grid">
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 01</span></div>
-            <div class="item-row"><label>STATUS:</label><div id="p1_online" class="value">-</div></div>
-            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p1_motor"></i><div id="p1_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p1_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>DATA RESET:</label><div id="p1_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p1_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>HORA EQ.:</label><div id="p1_hora_eq" class="value" style="color: #a855f7;">0.00 Eq/h</div></div>
-            <div class="item-row"><label>Nº PARTIDAS:</label><div id="p1_partidas" class="value">0</div></div>
-            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p1_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p1_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 02</span></div>
-            <div class="item-row"><label>STATUS:</label><div id="p2_online" class="value">-</div></div>
-            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p2_motor"></i><div id="p2_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p2_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>DATA RESET:</label><div id="p2_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p2_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>HORA EQ.:</label><div id="p2_hora_eq" class="value" style="color: #a855f7;">0.00 Eq/h</div></div>
-            <div class="item-row"><label>Nº PARTIDAS:</label><div id="p2_partidas" class="value">0</div></div>
-            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p2_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p2_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-        <div class="card poco-card">
-            <div class="card-header"><i data-lucide="droplet"></i><span>POÇO 03</span></div>
-            <div class="item-row"><label>STATUS:</label><div id="p3_online" class="value">-</div></div>
-            <div class="item-row"><label>FLUXO:</label><div class="fluxo-box"><i data-lucide="rotate-cw" id="p3_motor"></i><div id="p3_fluxo" class="value">-</div></div></div>
-            <div class="item-row"><label>TIMER RODÍZIO:</label><div id="p3_timer" class="value" style="color: #38bdf8;">00:00</div></div>
-            <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin:10px 0;">
-            <div class="item-row"><label>DATA RESET:</label><div id="p3_data_dash" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p3_timer_parcial_dash" class="value">00:00</div></div>
-            <div class="item-row"><label>HORA EQ.:</label><div id="p3_hora_eq" class="value" style="color: #a855f7;">0.00 Eq/h</div></div>
-            <div class="item-row"><label>Nº PARTIDAS:</label><div id="p3_partidas" class="value">0</div></div>
-            <div class="item-row"><label>CONSUMO PARCIAL:</label><div id="p3_kwh_dash" class="value" style="color: #4ade80;">0.0 kWh</div></div>
-            <div class="item-row"><label>VALOR ESTIMADO:</label><div id="p3_valor_dash" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-        </div>
-    </div>
-
-    <div class="card" style="margin: 20px; border-top: 4px solid #4ade80;">
-        <div class="card-header">
-            <i data-lucide="test-tube"></i>
-            <span>PRODUTO QUÍMICO (CLORO)</span>
-        </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px;">
-            <div>
-                <label style="color: #94a3b8; font-size: 12px; display: block;">PESO ATUAL NO TANQUE:</label>
-                <div style="font-size: 24px; font-weight: bold; color: #4ade80;">
-                    <span id="cloro_kg_dash">0.00</span> kg
-                </div>
-            </div>
-            <button onclick="enviarComando('tara_balanca')" 
-                    style="background: #334155; color: white; border: 1px solid #38bdf8; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="refresh-ccw" style="width:16px"></i> TARA (RESET)
-            </button>
-        </div>
-    </div>
-</section>
-
-<section id="config" class="tab-page" style="display: none;">
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
-        <div class="card">
-            <div class="card-header"><i data-lucide="settings-2"></i><span>AJUSTES DA CENTRAL</span></div>
-            <div class="config-container">
-                <div class="config-row" style="margin-bottom: 15px;">
-                    <label>Tempo de Rodízio:</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <select id="cfg_rodizio_h" class="login-input" style="flex:1"></select>
-                        <select id="cfg_rodizio_m" class="login-input" style="flex:1"></select>
-                    </div>
-                </div>
-                <div class="config-row" style="margin-bottom: 15px;"><label>Retro A:</label><select id="select_retroA" class="login-input" style="width:100%"><option value="1">Poço 1</option><option value="2">Poço 2</option><option value="3">Poço 3</option></select></div>
-                <div class="config-row" style="margin-bottom: 15px;"><label>Retro B:</label><select id="select_retroB" class="login-input" style="width:100%"><option value="1">Poço 1</option><option value="2">Poço 2</option><option value="3">Poço 3</option></select></div>
-                <div class="config-row" style="margin-bottom: 15px;"><label>Seleção Manual:</label><select id="select_manual" class="login-input" style="width:100%"><option value="1">Poço 1</option><option value="2">Poço 2</option><option value="3">Poço 3</option><option value="12">P1 & P2</option><option value="13">P1 & P3</option><option value="23">P2 & P3</option><option value="123">Todos</option></select></div>
-                <button id="btn_salvar_config" class="btn-save" style="width: 100%;"><i data-lucide="save"></i> SALVAR NA CENTRAL</button>
-                <button id="btn_power_central" class="btn-toggle-power" style="width: 100%; margin-top: 15px;">LIGAR/DESLIGAR CENTRAL</button>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 20px; border-left: 5px solid #f87171;">
-            <div class="card-header"><i data-lucide="shield-alert" style="color:#f87171"></i><span>SEGURANÇA</span></div>
-            <div class="config-container">
-                <div class="config-row"><label>Timeout Poço Offline (seg):</label><input type="number" id="cfg_timeout_offline" class="login-input" style="width:100%"></div>
-                <div class="config-row"><label>Timeout Falha Feedback (seg):</label><input type="number" id="cfg_timeout_feedback" class="login-input" style="width:100%"></div>
-                <div class="config-row"><label>Tempo Máx Enchimento (min):</label><input type="number" id="cfg_timeout_enchimento" class="login-input" style="width:100%"></div>
-                <div class="config-row"><label>Peso Crítico Cloro (kg):</label><input type="number" id="cfg_peso_critico" class="login-input" style="width:100%" step="0.1"></div>
-                <button id="btn_salvar_seguranca" class="btn-save" style="width: 100%; background: #c0392b;"><i data-lucide="save"></i> SALVAR SEGURANÇA</button>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 20px;">
-            <div class="card-header"><i data-lucide="zap"></i><span>CALIBRAÇÃO DE ENERGIA</span></div>
-            <div class="config-container">
-                <div class="config-row"><label>Preço kWh (R$):</label><input type="number" id="cfg_preco_kwh" class="login-input" style="width:100%" step="0.01"></div>
-                <div class="config-row"><label>kW Poço 1:</label><input type="number" id="cfg_p1_kw" class="login-input" style="width:100%" step="0.1"></div>
-                <div class="config-row"><label>kW Poço 2:</label><input type="number" id="cfg_p2_kw" class="login-input" style="width:100%" step="0.1"></div>
-                <div class="config-row"><label>kW Poço 3:</label><input type="number" id="cfg_p3_kw" class="login-input" style="width:100%" step="0.1"></div>
-                <button id="btn_salvar_energia" class="btn-save" style="width: 100%; background: #2980b9;"><i data-lucide="save"></i> SALVAR ENERGIA</button>
-            </div>
-        </div>
-
-        <div class="card" style="margin-top: 20px; border-left: 5px solid #a855f7;">
-            <div class="card-header"><i data-lucide="waves" style="color:#a855f7"></i><span>INTELIGÊNCIA HIDRÁULICA (PESOS)</span></div>
-            <div class="config-container">
-                <div class="config-row"><label>Peso Poço 1 (Vazão):</label><input type="number" id="cfg_peso_p1" class="login-input" style="width:100%" step="0.1" value="1.0"></div>
-                <div class="config-row"><label>Peso Poço 2 (Vazão):</label><input type="number" id="cfg_peso_p2" class="login-input" style="width:100%" step="0.1" value="1.0"></div>
-                <div class="config-row"><label>Peso Poço 3 (Vazão):</label><input type="number" id="cfg_peso_p3" class="login-input" style="width:100%" step="0.1" value="1.0"></div>
-                <div class="config-row"><label>Tempo Verificação Eficiência (min):</label><input type="number" id="cfg_tempo_eficiencia" class="login-input" style="width:100%" value="25"></div>
-                <button id="btn_salvar_hidraulica" class="btn-save" style="width: 100%; background: #8e44ad;"><i data-lucide="save"></i> SALVAR CONFIG. HIDRÁULICA</button>
-            </div>
-        </div>
-        </div>
-</section>
-
-<section id="consumo" class="tab-page" style="display: none;">
-    <div class="consumo-grid">
-        <div class="card card-consumo">
-            <div class="card-header"><span>ANALÍTICO P1</span></div>
-            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p1_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>DATA RESET:</label><div id="p1_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p1_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>HORA EQUIVALENTE:</label><div id="p1_hora_eq_cons" class="value" style="color: #a855f7;">-</div></div>
-            <div class="item-row"><label>Nº DE PARTIDAS:</label><div id="p1_partidas_cons" class="value">-</div></div>
-            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p1_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-            <button id="btn_reset_p1" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P1</button>
-        </div>
-        <div class="card card-consumo">
-            <div class="card-header"><span>ANALÍTICO P2</span></div>
-            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p2_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>DATA RESET:</label><div id="p2_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p2_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>HORA EQUIVALENTE:</label><div id="p2_hora_eq_cons" class="value" style="color: #a855f7;">-</div></div>
-            <div class="item-row"><label>Nº DE PARTIDAS:</label><div id="p2_partidas_cons" class="value">-</div></div>
-            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p2_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-            <button id="btn_reset_p2" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P2</button>
-        </div>
-        <div class="card card-consumo">
-            <div class="card-header"><span>ANALÍTICO P3</span></div>
-            <div class="item-row"><label>TEMPO TOTAL (VIDA):</label><div id="p3_timer_total" class="value">-</div></div>
-            <div class="item-row"><label>DATA RESET:</label><div id="p3_data_cons" class="value">-</div></div>
-            <div class="item-row"><label>TIMER PARCIAL:</label><div id="p3_timer_parcial" class="value" style="color: #fb923c;">-</div></div>
-            <div class="item-row"><label>HORA EQUIVALENTE:</label><div id="p3_hora_eq_cons" class="value" style="color: #a855f7;">-</div></div>
-            <div class="item-row"><label>Nº DE PARTIDAS:</label><div id="p3_partidas_cons" class="value">-</div></div>
-            <div class="item-row"><label>CUSTO PERÍODO:</label><div id="p3_valor" class="value" style="color: #fb923c;">R$ 0,00</div></div>
-            <button id="btn_reset_p3" class="btn-reset-parcial"><i data-lucide="rotate-ccw"></i> RESETAR P3</button>
-        </div>
-    </div>
-</section>
-
-<section id="historico" class="tab-page" style="display: none;">
-    <div class="card" style="margin: 0 20px 20px 20px;">
-        <div class="card-header"><i data-lucide="history"></i><span>LOG DE EVENTOS</span></div>
-        <div class="history-container"><ul id="history_list" class="history-list"></ul></div>
-    </div>
-    <div class="card" style="margin: 0 20px;">
-        <div class="card-header"><i data-lucide="refresh-cw"></i><span>HISTÓRICO DE RETROS</span></div>
-        <div class="history-container"><ul id="lista_historico_retro" class="history-list"></ul></div>
-    </div>
-</section>
-
-<section id="alarmes_aba" class="tab-page" style="display: none;">
-    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
-        <div class="card" style="border-color: #f87171;">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div><i data-lucide="alert-triangle" style="color:#f87171"></i><span>ALERTAS ATIVOS</span></div>
-                <button id="btn_reset_alarmes" class="btn-reset-parcial" style="background: #ef4444; border: none; padding: 5px 15px; font-size: 12px;">
-                    <i data-lucide="bell-off"></i> RESETAR ALARMES
-                </button>
-            </div>
-            <ul id="alarm_list" class="history-list" style="min-height: 100px;">
-            </ul>
-        </div>
-    </div>
-</section>
-
-<div id="password_modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center;">
-    <div class="modal-content" style="background:#0f172a; padding:30px; border-radius:20px; border:1px solid #38bdf8; text-align:center; width:300px;">
-        <i data-lucide="lock" style="color:#38bdf8; margin-bottom:15px;"></i>
-        <h3 style="color:white; margin-bottom:20px;">ACESSO RESTRITO</h3>
-        <input type="text" id="input_user" placeholder="Usuário" class="login-input" style="width:100%; margin-bottom:10px; text-align:center;">
-        <input type="password" id="input_pass" placeholder="Senha" class="login-input" style="width:100%; margin-bottom:20px; text-align:center;">
-        <button onclick="checkLogin()" class="btn-save" style="width:100%">ENTRAR</button>
-        <button onclick="closePasswordModal()" style="margin-top:15px; background:none; border:none; color:#94a3b8; cursor:pointer;">Cancelar</button>
-    </div>
-</div>
-
-<script>
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-page').forEach(page => {
-            page.style.display = 'none';
-        });
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        const target = document.getElementById(tabId);
-        if (target) target.style.display = 'block';
-        const activeBtn = document.querySelector(`[onclick*="${tabId}"]`);
-        if (activeBtn) activeBtn.classList.add('active');
-        lucide.createIcons();
-    }
-    
-    function openLogin() { document.getElementById("password_modal").style.display = "flex"; }
-    function closePasswordModal() { document.getElementById("password_modal").style.display = "none"; }
-    
-    function checkLogin() {
-        if(document.getElementById("input_user").value === "Smart Control" && document.getElementById("input_pass").value === "1225") {
-            closePasswordModal();
-            switchTab('config');
-        } else alert("Acesso Negado");
-    }
-
-    function enviarComando(tipo) {
-        if (typeof client !== 'undefined' && client.connected) {
-            let payload = {};
-            if (tipo === 'tara_balanca') payload = { tara_balanca: 1 };
+        <main class="tab-content">
             
-            const message = new Paho.MQTT.Message(JSON.stringify(payload));
-            message.destinationName = "fenix/central/comando";
-            client.send(message);
-            console.log("Enviado:", payload);
-        } else {
-            console.error("MQTT não conectado");
-        }
-    }
+            <section class="card card-status">
+                <div class="status-item">
+                    <span>MQTT:</span>
+                    <span id="mqtt-status" class="status-badge bg-red">Desconectado</span>
+                </div>
+                <div class="status-item">
+                    <span>Central:</span>
+                    <span id="central-status" class="status-badge bg-red">Offline</span>
+                </div>
+            </section>
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const hSel = document.getElementById('cfg_rodizio_h');
-        for(let i=0; i<=24; i++) hSel.add(new Option(i + "h", i));
-        const mSel = document.getElementById('cfg_rodizio_m');
-        for(let i=0; i<60; i++) mSel.add(new Option(i.toString().padStart(2, '0') + "m", i));
-        lucide.createIcons();
-    });
-</script>
-<script src="app.js"></script>
+            <section class="card card-operacao">
+                <div class="info-row">
+                    <label>Sistema:</label>
+                    <span id="sistema-estado" class="val-destaque">Desligado</span>
+                </div>
+                <hr>
+                <div class="info-row">
+                    <label>Modo de Operação:</label>
+                    <span id="modo-operacao" class="val-destaque">Automático</span>
+                </div>
+                <hr>
+                <div class="info-row">
+                    <label>Nível:</label>
+                    <span id="nivel-digital" class="val-destaque">Enchendo...</span>
+                </div>
+                <hr>
+                <div class="info-row">
+                    <label>Poço Escolhido:</label>
+                    <span id="poco-ativo" class="val-destaque">Nenhum</span>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
 </body>
 </html>
