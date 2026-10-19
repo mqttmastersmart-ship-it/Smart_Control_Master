@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<!-- Versao Usuario Final: abas Engenharia e Debug removidas -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b1220">
+  <title>Fenix Smart Control - Águas do Cerrado</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <!-- Coloque as logos na pasta /logos usando os nomes: logo-fenix.png e logo-aguas-do-cerrado.png -->
+        <div class="brand-logos" aria-label="Logos Fenix e Águas do Cerrado">
+          <div class="brand-logo-card">
+            <img class="brand-logo-img" src="logos/logo-fenix.png" alt="Logo Fenix Soluções Industriais">
+          </div>
+          <div class="brand-logo-card brand-logo-card-client">
+            <img class="brand-logo-img" src="logos/logo-aguas-do-cerrado.png" alt="Logo Águas do Cerrado">
+          </div>
+        </div>
+        <div class="brand-copy">
+          <span class="eyebrow">Automação inteligente via rádio</span>
+          <h1>Fenix Smart Control</h1>
+          <p class="client">Águas do Cerrado</p>
+          <p class="subtitle">Supervisão de poços, registro de retro, monitoramento do abastecimento de cloro</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="pill"><span class="dot bad" id="mqttDot"></span><span id="mqttLabel">MQTT offline</span></div>
+        <div class="pill"><span class="dot bad" id="centralDot"></span><span id="centralLabel">Central offline</span></div>
+        <button class="power off" id="powerBtn" type="button" title="Ligar ou desligar o sistema" aria-label="Ligar ou desligar o sistema"><span class="power-caption">SISTEMA</span><strong id="powerLabel">--</strong><span class="power-knob" aria-hidden="true"><img class="power-icon power-icon-on" src="logos/power-on.png" alt=""><img class="power-icon power-icon-off" src="logos/power-off.png" alt=""><span class="power-fallback">⏻</span></span></button>
+      </div>
+    </header>
+
+    <section class="status-strip">
+      <div class="mini mini-mode"><span><span class="mini-label-ico" aria-hidden="true">⚙️</span>Modo</span><strong id="modeLabel">--</strong></div>
+      <div class="mini mini-float"><span><span class="mini-label-ico" aria-hidden="true">💧</span>Boia</span><strong id="floatLabel">--</strong></div>
+      <div class="mini mini-stage"><span><span class="mini-label-ico" aria-hidden="true">▶️</span>Operação</span><strong id="stageTopLabel">--</strong></div>
+      <div class="mini mini-retro"><span><span class="mini-label-ico" aria-hidden="true">🔄</span>Retro</span><strong id="retroTopLabel">--</strong></div>
+      <div class="mini mini-wifi"><span><span class="mini-label-ico" aria-hidden="true">📶</span>Wi‑Fi</span><strong id="wifiTopLabel">--</strong></div>
+      <div class="mini mini-ip"><span><span class="mini-label-ico" aria-hidden="true">🌐</span>IP</span><strong id="ipTopLabel">--</strong></div>
+      <div class="mini mini-rssi"><span><span class="mini-label-ico" aria-hidden="true">📡</span>Sinal</span><strong id="rssiTopLabel">--</strong></div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" type="button" data-view="geral"><span class="tab-ico" aria-hidden="true">🏠</span><span class="tab-label">Geral</span></button>
+      <button class="tab" type="button" data-view="manual"><span class="tab-ico" aria-hidden="true">🕹️</span><span class="tab-label">Manual</span></button>
+      <button class="tab" type="button" data-view="config"><span class="tab-ico" aria-hidden="true">⚙️</span><span class="tab-label">Configurações</span></button>
+      <button class="tab" type="button" data-view="retro"><span class="tab-ico" aria-hidden="true">🧼</span><span class="tab-label">Retro</span></button>
+      <button class="tab" type="button" data-view="alarmes"><span class="tab-ico" aria-hidden="true">🚨</span><span class="tab-label">Alarmes</span></button>
+    </nav>
+
+    <main>
+      <section class="view active" id="view-geral">
+        <div class="section-title"><span class="section-ico" aria-hidden="true">💧</span>Pontos e poços</div>
+        <div class="grid" id="wellCards"></div>
+
+        <div class="section-title"><span class="section-ico" aria-hidden="true">📊</span>Gerenciador de produção</div>
+        <div class="card">
+          <div class="well-grid">
+            <span>Estado: <b id="stageName">--</b></span>
+            <span>Grupo atual: <b id="stageRemain">--</b></span>
+            <span>Grupo desejado: <b id="cycleTotal">--</b></span>
+            <span>Vazao atual: <b id="stageWells">--</b></span>
+          </div>
+          <div class="config-note" id="managerNote">Aguardando status operacional da central.</div>
+        </div>
+
+        <div class="section-title"><span class="section-ico" aria-hidden="true">🧪</span>Cloro</div>
+        <div class="two chlorine-summary">
+          <div class="card">
+            <div class="section-title section-without-top-margin"><span class="section-ico" aria-hidden="true">⚖️</span>Peso atual</div>
+            <div id="chlorineWeight" class="chlorine-weight-value">--</div>
+            <div class="muted">kg | limite baixo: <b id="chlorineLowLabel">--</b></div>
+            <div class="muted chlorine-status-spacing">HX711: <b id="hx711State">--</b> | Alarme: <b id="chlorineAlarmState">--</b></div>
+          </div>
+          <div class="card">
+            <div class="section-title section-without-top-margin"><span class="section-ico" aria-hidden="true">🧴</span>Bomba dosadora</div>
+            <div id="chlorinePump" class="chlorine-pump-value">--</div>
+            <div class="muted">Liga somente com poco confirmado por feedback.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-manual">
+        <div class="section-title"><span class="section-ico" aria-hidden="true">🕹️</span>Comando manual</div>
+        <div class="grid" id="manualCards"></div>
+        <div class="card card-top-spacing">
+          <div class="well-grid">
+            <span>Grupo solicitado no app: <b id="manualDraftLabel">Nenhum</b></span>
+            <span>Grupo aceito pela central: <b id="manualAcceptedLabel">--</b></span>
+          </div>
+          <div class="actions">
+            <button class="cmd on" id="applyManualGroupBtn" type="button">Aplicar grupo manual</button>
+            <button class="cmd danger" id="clearManualGroupBtn" type="button">Desligar todos</button>
+          </div>
+          <div class="config-note">O ACK confirma que o pedido foi aceito. O estado real de rele e feedback continua sendo mostrado nos cards dos pocos.</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-config">
+        <div class="section-title"><span class="section-ico" aria-hidden="true">📊</span>Gerenciador de produção</div>
+        <div class="card">
+          <div class="config-stack">
+            <div class="config-block">
+              <div class="form-grid">
+                <div class="field"><label for="gerenciador_ativo">Gerenciamento automatico</label><select id="gerenciador_ativo" data-config><option value="" selected>--</option><option value="true">ATIVO</option><option value="false">INATIVO</option></select></div>
+              </div>
+            </div>
+            <div class="config-block">
+              <div class="section-title"><span class="section-ico" aria-hidden="true">💧</span>Pontos e poços</div>
+              <div class="pocos-config-grid">
+
+                <div class="poco-config-card">
+                  <div class="poco-config-head">
+                    <strong>Poco 1</strong>
+                    <span>P1</span>
+                  </div>
+                  <div class="poco-config-fields">
+                    <div class="field">
+                      <label for="p1_habilitado">Participa do gerenciamento</label>
+                      <select id="p1_habilitado" data-config><option value="" selected>--</option>
+                        <option value="true">SIM</option>
+                        <option value="false">NAO</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="p1_vazao_m3h">Vazao nominal (m3/h)</label>
+                      <input id="p1_vazao_m3h" data-config type="number" min="0.1" step="0.1" placeholder="--">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="poco-config-card">
+                  <div class="poco-config-head">
+                    <strong>Poco 2</strong>
+                    <span>P2</span>
+                  </div>
+                  <div class="poco-config-fields">
+                    <div class="field">
+                      <label for="p2_habilitado">Participa do gerenciamento</label>
+                      <select id="p2_habilitado" data-config><option value="" selected>--</option>
+                        <option value="true">SIM</option>
+                        <option value="false">NAO</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="p2_vazao_m3h">Vazao nominal (m3/h)</label>
+                      <input id="p2_vazao_m3h" data-config type="number" min="0.1" step="0.1" placeholder="--">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="poco-config-card">
+                  <div class="poco-config-head">
+                    <strong>Poco 3</strong>
+                    <span>P3</span>
+                  </div>
+                  <div class="poco-config-fields">
+                    <div class="field">
+                      <label for="p3_habilitado">Participa do gerenciamento</label>
+                      <select id="p3_habilitado" data-config><option value="" selected>--</option>
+                        <option value="true">SIM</option>
+                        <option value="false">NAO</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="p3_vazao_m3h">Vazao nominal (m3/h)</label>
+                      <input id="p3_vazao_m3h" data-config type="number" min="0.1" step="0.1" placeholder="--">
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <div class="config-block">
+              <div class="section-title">Capacidade do sistema</div>
+              <div class="form-grid"><div class="field"><label for="vazao_max_sistema_m3h">Vazao maxima simultanea (m3/h)</label><input id="vazao_max_sistema_m3h" data-config type="number" min="0.1" step="0.1" placeholder="--"></div></div>
+            </div>
+            <div class="config-block">
+              <div class="section-title">Rodizio inteligente</div>
+              <div class="form-grid">
+                <div class="field"><label for="percentual_minimo_alternativa">Producao minima da alternativa (%)</label><input id="percentual_minimo_alternativa" data-config type="number" min="50" max="100" placeholder="--"></div>
+                <div class="field"><label for="tempo_continuo_preferencial_min">Tempo continuo preferencial (min)</label><input id="tempo_continuo_preferencial_min" data-config type="number" min="1" placeholder="--"></div>
+                <div class="field"><label for="tempo_minimo_descanso_min">Tempo minimo de descanso (min)</label><input id="tempo_minimo_descanso_min" data-config type="number" min="1" placeholder="--"></div>
+                <div class="field"><label for="tempo_minimo_grupo_ligado_min">Tempo minimo antes de trocar grupo (min)</label><input id="tempo_minimo_grupo_ligado_min" data-config type="number" min="1" placeholder="--"></div>
+              </div>
+            </div>
+            <div class="config-block">
+              <div class="section-title">Acionamento</div>
+              <div class="form-grid">
+                <div class="field"><label for="tempo_guarda_troca_seg">Tempo de guarda na troca (s)</label><input id="tempo_guarda_troca_seg" data-config type="number" min="0" step="0.1" placeholder="--"></div>
+                <div class="field"><label for="intervalo_acionamentos_seg">Intervalo entre acionamentos (s)</label><input id="intervalo_acionamentos_seg" data-config type="number" min="0" placeholder="--"></div>
+              </div>
+              <div class="config-note">Os valores exibidos sao lidos da central. Ao conectar, o app sincroniza a configuracao salva no ESP32/NVS.</div>
+            </div>
+          </div>
+          <div class="actions"><button class="cmd on save-config" type="button" data-group="gerenciador">Salvar gerenciador</button><button class="cmd read-config" type="button">Ler central</button></div>
+        </div>
+
+        <div class="section-title"><span class="section-ico" aria-hidden="true">🧼</span>Retro lavagem</div>
+        <div class="card" data-group="retro">
+          <div class="form-grid">
+            <div class="field"><label for="retro_p1">Poco 1</label><select id="retro_p1" data-config><option value="" selected>--</option><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div class="field"><label for="retro_p2">Poco 2</label><select id="retro_p2" data-config><option value="" selected>--</option><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div class="field"><label for="retro_p3">Poco 3</label><select id="retro_p3" data-config><option value="" selected>--</option><option value="true">ON</option><option value="false">OFF</option></select></div>
+            <div class="field"><label for="retro_result">Resultado</label><input id="retro_result" value="--" readonly></div>
+          </div>
+          <div class="actions"><button class="cmd on save-config" type="button" data-group="retro">Salvar retro</button><button class="cmd read-config" type="button">Ler central</button></div>
+        </div>
+
+        <div class="section-title">Cloro e balanca</div>
+        <div class="card" data-group="cloro">
+          <div class="form-grid">
+            <div class="field"><label for="cloro_alarme_kg">Alarme cloro baixo (kg)</label><input id="cloro_alarme_kg" data-config type="number" min="0" step="0.1" placeholder="--"></div>
+            <div class="field"><label for="hx711_fator">Fator calibracao HX711</label><input id="hx711_fator" data-config type="number" step="0.01" placeholder="--"></div>
+          </div>
+          <div class="config-note">Alarme ativa somente apos 5 min continuamente abaixo do limite e normaliza apos 10 s continuamente acima. Tara e fator ficam salvos na central.</div>
+          <div class="actions"><button class="cmd on save-config" type="button" data-group="cloro">Salvar cloro</button><button class="cmd warn" id="tareBtn" type="button" disabled>Tara cloro</button><button class="cmd read-config" type="button">Ler central</button></div>
+        </div>
+
+        <div aria-hidden="true" class="hidden-stage-inputs"><input id="e1_min" value="1"><input id="e2_min" value="1"><input id="e3_min" value="1"><input id="e4_min" value="1"></div>
+      </section>
+
+      <section class="view" id="view-retro">
+        <div class="section-title"><span class="section-ico" aria-hidden="true">🧼</span>Retro lavagem</div>
+        <div class="card">
+          <div class="well-grid">
+            <span>Entrada fisica: <b id="retroInput">--</b></span>
+            <span>Estado: <b id="retroState">--</b></span>
+            <span>Inicio: <b id="retroStart">--</b></span>
+            <span>Registros: <b id="retroCount">--</b></span>
+          </div>
+        </div>
+        <div class="card card-top-spacing">
+          <div class="actions retro-actions-spacing"><button class="cmd" id="readRetroBtn" type="button">Ler registros</button></div>
+          <table>
+            <thead><tr><th>Inicio</th><th>Fim</th><th>Feedback</th><th>Status</th></tr></thead>
+            <tbody id="retroLogBody"><tr><td colspan="4">Nenhum registro recebido.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view hidden-chlorine-view" id="view-cloro" aria-hidden="true"></section>
+
+      <section class="view" id="view-alarmes">
+        <div class="section-title"><span class="section-ico" aria-hidden="true">🚨</span>Alarmes</div>
+
+        <div class="alarm-section">
+          <div class="alarm-section-head">
+            <strong>Alarmes ativos</strong>
+            <span class="alarm-count" id="activeAlarmCount">0</span>
+          </div>
+          <div class="card">
+            <div class="alarm-current" id="alarmList">
+              <div class="alarm-empty">Aguardando status da central</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alarm-section">
+          <div class="alarm-section-head">
+            <strong>Eventos recentes</strong>
+            <span class="alarm-count" id="recentEventCount">0</span>
+          </div>
+          <div class="card">
+            <div class="recent-events" id="recentEventList">
+              <div class="alarm-empty">Nenhum evento recebido nesta sessão</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
